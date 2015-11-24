@@ -1,0 +1,23 @@
+cosign.admin:
+  path: /admin/config/system/cosign
+  defaults:
+    _title: Cosign
+    _form: \Drupal\cosign\Form\CosignAdmin
+  requirements:
+    _permission: 'administer cosign'
+
+cosign.logout:
+  path: /user/logout
+  defaults:
+    _title: Cosign Logout
+    _controller: '\Drupal\cosign\Controller\CosignController::cosign_logout'
+  requirements:
+    _access: 'TRUE'
+
+cosign.login:
+  path: /user/login
+  defaults:
+    _title: Cosign Login
+    _controller: '\Drupal\cosign\Controller\CosignController::cosign_login'
+  requirements:
+    _access: 'TRUE'

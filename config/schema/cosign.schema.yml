@@ -1,0 +1,24 @@
+cosign.settings:
+  type: mapping
+  label: Settings
+  mapping:
+    cosign_allow_friend_accounts:
+      type: integer
+    cosign_invalid_login:
+      type: string
+    cosign_autocreate:
+      type: integer
+    cosign_autologout:
+      type: integer
+    cosign_allow_anons_on_https:
+      type: integer
+    cosign_logout_path:
+      type: string
+    cosign_logout_to:
+      type: string
+    cosign_friend_account_message:
+      type: string
+    cosign_invalid_login_message:
+      type: string
+    cosignautocreate_email_domain:
+      type: string

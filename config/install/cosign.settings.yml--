@@ -1,0 +1,10 @@
+cosign_allow_friend_accounts: 0
+cosign_invalid_login: access-denied
+cosign_autocreate: 0
+cosign_autologout: 1
+cosign_allow_anons_on_https: 0
+cosign_logout_path: ''
+cosign_logout_to: ''
+cosign_friend_account_message: ''
+cosign_invalid_login_message: ''
+cosignautocreate_email_domain: 'umich.edu'

@@ -1,0 +1,4 @@
+administer cosign:
+  title: 'Administer cosign'
+  description: 'Allows a user to configure cosign settings.'
+  restrict access: TRUE
