@@ -31,7 +31,6 @@ class CosignController extends ControllerBase {
 
   public function cosign_logout() {
     user_logout();
-    user_load(0, TRUE);
     $logout_path = \Drupal::config('cosign.settings')->get('cosign_logout_path');
     $logout_to = \Drupal::configFactory()->getEditable('cosign.settings')->get('cosign_logout_to');
     $logout = $logout_path . '?' . $logout_to;
@@ -39,9 +38,9 @@ class CosignController extends ControllerBase {
     //this had to be done of user was logged into cosign/drupal for several minutes after logging out
     //for ref since this was hard to find - Cookie($name, $value, $minutes, $path, $domain, $secure, $httpOnly)
     //set value to nonsense and domain to blank so it becomes a host cookie.
-    //set the expiration to -1 so it immediately expires. otherwise, cosign has a hard time overwriting
+    //set the expiration to -1 so it immediately expires. otherwise, cosign has a hard time overwriting if you hit Go Back from the cosign logout screen (at umich at least)
     $response->headers->setCookie(new Cookie('cosign-eliotwsc-drupal8.www.lib.umich.edu', 'huhuh', 0, '/', '', -1, 0));
-    
+
     return $response;
   }
 

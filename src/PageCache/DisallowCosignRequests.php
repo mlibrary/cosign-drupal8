@@ -17,6 +17,9 @@ use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
  * This policy disallows caching of requests that use cosign for security
  * reasons. Otherwise responses for authenticated requests can get into the
  * page cache and could be delivered to unprivileged users.
+ *
+ * // TODO
+ * This was copied and altered from basic_auth. Not sure if it is really neccessary though
  */
 class DisallowCosignRequests implements RequestPolicyInterface {
 

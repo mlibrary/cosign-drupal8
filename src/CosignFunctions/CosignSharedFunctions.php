@@ -8,6 +8,7 @@
 namespace Drupal\cosign\CosignFunctions;
 
 use Symfony\Component\HttpFoundation\Request;
+use Drupal\Core\Entity\EntityManagerInterface;
 
 /**
  * Cosign shared functions.
@@ -41,8 +42,15 @@ class CosignSharedFunctions {
     $user = \Drupal::currentUser();
     $uname = $user->getAccountName();
     $drupal_user = user_load_by_name($cosign_username);
-
-    if (!empty($cosign_username) && !empty($drupal_user) && empty($uname)) {
+    //this is highly unlikely as $user is null, but just in case
+    if (!empty($uname)) {
+      //youre already logged in
+      //make sure you are the cosign user. if not log out and start over
+      if ($cosign_username != $uname) {
+        user_logout();
+      }
+    }
+    elseif (!empty($cosign_username) && !empty($drupal_user) && empty($uname)) {
       //login the cosign user
       CosignSharedFunctions::cosign_login_user($drupal_user);
     }
@@ -51,15 +59,11 @@ class CosignSharedFunctions {
       $new_user = CosignSharedFunctions::cosign_create_new_user($cosign_username);
       user_load($new_user->id(), TRUE);
     }
-    elseif (!empty($uname)) {
-      //youre already logged in
-    }
     elseif (empty($cosign_username)){
       //no cosign account found
       user_logout();
       return null;
     }
-
     return \Drupal::currentUser();
   }
 
@@ -154,6 +158,7 @@ class CosignSharedFunctions {
       $account = entity_create('user', $new_user);
       $account->enforceIsNew();
       $account->save();
+
       return $account;
     }
   }

@@ -3,7 +3,7 @@ services:
     class: Drupal\cosign\Authentication\Provider\Cosign
     arguments: ['@config.factory', '@user.auth', '@entity.manager']
     tags:
-      - { name: authentication_provider, provider_id: 'cosign', priority: 0 }
+      - { name: authentication_provider, provider_id: 'cosign', priority: 100, global: TRUE }
 
   cosign.page_cache_request_policy.disallow_cosign_requests:
       class: Drupal\cosign\PageCache\DisallowCosignRequests
