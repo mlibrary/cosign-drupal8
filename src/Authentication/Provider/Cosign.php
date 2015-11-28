@@ -78,7 +78,8 @@ class Cosign implements AuthenticationProviderInterface {
     }
     if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0 && 
         $request->server->get('protossl') == 's' &&
-        $request->getRequestUri() != '/user/logout'
+        $request->getRequestUri() != '/user/logout' &&
+        $request->getRequestUri() != '/user/login'
        ) {
       return TRUE;
     }

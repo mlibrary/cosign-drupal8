@@ -5,6 +5,11 @@ services:
     tags:
       - { name: authentication_provider, provider_id: 'cosign', priority: 100, global: TRUE }
 
+  cosign.subscriber:
+    class: Drupal\cosign\EventSubscriber\CosignSubscriber
+    tags:
+      - { name: event_subscriber, priority: 99 }
+
   cosign.page_cache_request_policy.disallow_cosign_requests:
       class: Drupal\cosign\PageCache\DisallowCosignRequests
       public: false

@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\Core\Url;
-
+use Drupal\Core\Routing\UrlGenerator;
 use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Authentication\AuthenticationProviderInterface;
 use Drupal\Core\Authentication\AuthenticationProviderChallengeInterface;
@@ -45,21 +45,23 @@ class CosignController extends ControllerBase {
   }
 
   public function cosign_login() {
-    if ($_SERVER['protossl'] != 's') {
-      return new RedirectResponse('https://' . $_SERVER['SERVER_NAME'] . '/user/login');
+    $username = CosignSharedFunctions::cosign_retrieve_remote_user();
+    if ($username) {
+      CosignSharedFunctions::cosign_user_status($username);
     }
-    if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
-      $username = CosignSharedFunctions::cosign_retrieve_remote_user();
+    elseif (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
       $is_friend_account = CosignSharedFunctions::cosign_is_friend_account($username);
       // If friend accounts are not allowed, log them out
       if (\Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0 && $is_friend_account) {
         CosignSharedFunctions::cosign_friend_not_allowed();
         return null;
       }
-      CosignSharedFunctions::cosign_user_status($username);
     }
-    $redirect_path = CosignSharedFunctions::cosign_redirect();
-    return new RedirectResponse($redirect_path);
+    $request_uri = \Drupal::request()->getRequestUri();
+    if ($request_uri == '/user/login') {
+      $request_uri = '/';
+    }
+    return new RedirectResponse($request_uri);
   }
 }
 ?>

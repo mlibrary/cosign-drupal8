@@ -15,24 +15,6 @@ use Drupal\Core\Entity\EntityManagerInterface;
  */
 class CosignSharedFunctions {
   /**
-   * Decide how to redirect the user after logging into drupal via cosign
-   *
-   * @return
-   *   String path
-   */
-  public static function cosign_redirect() {
-    //TODO drupal_get_destination deprecated soon(ish)
-    $destination = drupal_get_destination()['destination'];
-    if (in_array($destination, array('/user/login', '/user/logout'))) {
-      $response_path = 'https://' . $_SERVER['SERVER_NAME'] . base_path();
-    }
-    else{
-      $response_path = 'https://' . $_SERVER['SERVER_NAME'] . $destination;
-    }
-
-    return $response_path;
-  }
-  /**
    * Check whether user is loggedin to cosign, is a drupal user, and is logged into drupal
    *
    * @return
@@ -42,10 +24,9 @@ class CosignSharedFunctions {
     $user = \Drupal::currentUser();
     $uname = $user->getAccountName();
     $drupal_user = user_load_by_name($cosign_username);
-    //this is highly unlikely as $user is null, but just in case
     if (!empty($uname)) {
       //youre already logged in
-      //make sure you are the cosign user. if not log out and start over
+      //make sure you are the cosign user. if not log out
       if ($cosign_username != $uname) {
         user_logout();
       }
@@ -59,12 +40,16 @@ class CosignSharedFunctions {
       $new_user = CosignSharedFunctions::cosign_create_new_user($cosign_username);
       user_load($new_user->id(), TRUE);
     }
-    elseif (empty($cosign_username)){
+    elseif (empty($cosign_username) && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0){
       //no cosign account found
       user_logout();
       return null;
     }
-    return \Drupal::currentUser();
+    $user = \Drupal::currentUser();
+    if (!$user && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
+      $user = entityManager::getStorage('user')->load(0);
+    }
+    return $user;
   }
 
   /**
@@ -117,6 +102,25 @@ class CosignSharedFunctions {
   }
 
   /**
+   * Attempts to retrieve the protossl from the $_SERVER variable.
+   *
+   * We need to check for https on logins. 
+   * since we need to intercept redirects from routes and events, this is a shared function
+   *
+   * @return
+   *   Boolean TRUE or FALSE.
+   */
+  //TODO get $_SERVER['protossl'] properly. Symfony HeaderBag?
+  public static function cosign_is_https() {
+    $is_https = FALSE;
+    if ($_SERVER['protossl'] == 's') {
+      $is_https = TRUE;
+    }
+
+    return $is_https;
+  }
+
+  /**
    * Attempts to retrieve the remote realm from the $_SERVER variable.
    *
    * If the user is logged in to cosign webserver auth, the remote realm variable
@@ -133,7 +137,6 @@ class CosignSharedFunctions {
     }
 
     return $is_friend_account;
-
   }
 
   /**
