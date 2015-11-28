@@ -47,15 +47,13 @@ class CosignController extends ControllerBase {
   public function cosign_login() {
     $username = CosignSharedFunctions::cosign_retrieve_remote_user();
     if ($username) {
-      CosignSharedFunctions::cosign_user_status($username);
-    }
-    elseif (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
       $is_friend_account = CosignSharedFunctions::cosign_is_friend_account($username);
       // If friend accounts are not allowed, log them out
       if (\Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0 && $is_friend_account) {
         CosignSharedFunctions::cosign_friend_not_allowed();
         return null;
       }
+      CosignSharedFunctions::cosign_user_status($username);
     }
     $request_uri = \Drupal::request()->getRequestUri();
     if ($request_uri == '/user/login') {
