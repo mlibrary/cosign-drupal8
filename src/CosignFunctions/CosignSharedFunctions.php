@@ -7,9 +7,6 @@
 
 namespace Drupal\cosign\CosignFunctions;
 
-use Symfony\Component\HttpFoundation\Request;
-use Drupal\Core\Entity\EntityManagerInterface;
-
 /**
  * Cosign shared functions.
  */
@@ -26,12 +23,26 @@ class CosignSharedFunctions {
     $drupal_user = user_load_by_name($cosign_username);
     if (!empty($uname)) {
       //youre already logged in
-      //make sure you are the cosign user. if not log out
+      //make sure you are the cosign user. if not log out. This is unlikely
       if ($cosign_username != $uname) {
         user_logout();
+        return null;
       }
     }
-    elseif (!empty($cosign_username) && !empty($drupal_user) && empty($uname)) {
+    if (!empty($cosign_username)){
+      $is_friend_account = CosignSharedFunctions::cosign_is_friend_account($username);
+      // If friend accounts are not allowed, log them out
+      if (\Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0 && $is_friend_account) {
+        CosignSharedFunctions::cosign_friend_not_allowed();
+        if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
+          return user_load(0);
+        }
+        else {
+          return null;
+        }
+      }
+    }
+    if (!empty($cosign_username) && !empty($drupal_user) && empty($uname)) {
       //login the cosign user
       CosignSharedFunctions::cosign_login_user($drupal_user);
     }
@@ -47,7 +58,8 @@ class CosignSharedFunctions {
     }
     $user = \Drupal::currentUser();
     if (!$user && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-      $user = entityManager::getStorage('user')->load(0);
+      drupal_set_message("You do not have a valid cosign username. Browsing as anonymous user over https.");
+      $user = user_load(0);
     }
     return $user;
   }
@@ -73,10 +85,16 @@ class CosignSharedFunctions {
    */
   public static function cosign_friend_not_allowed() {
     \Drupal::logger('cosign')->notice('User attempted login using a university friend account and the friend account configuration setting is turned off: @remote_user', array('@remote_user' => $username));
-    drupal_set_message(\Drupal::config('cosign.settings')->get('cosign_friend_account_message'), 'status');
+    drupal_set_message(\Drupal::config('cosign.settings')->get('cosign_friend_account_message'), 'warning');
+    drupal_set_message(t('You might want to <a href="/user/logout">logout of cosign</a>'), 'warning');
     user_logout();
-
     return null;
+  }
+  
+  public function cosign_logout_url() {
+    $logout_path = \Drupal::config('cosign.settings')->get('cosign_logout_path');
+    $logout_to = \Drupal::config('cosign.settings')->get('cosign_logout_to');
+    return $logout_path . '?' . $logout_to;
   }
 
   /**
@@ -110,10 +128,9 @@ class CosignSharedFunctions {
    * @return
    *   Boolean TRUE or FALSE.
    */
-  //TODO get $_SERVER['protossl'] properly. Symfony HeaderBag?
   public static function cosign_is_https() {
     $is_https = FALSE;
-    if ($_SERVER['protossl'] == 's') {
+    if (\Drupal::request()->server->get('protossl') == 's') {
       $is_https = TRUE;
     }
 
@@ -162,7 +179,7 @@ class CosignSharedFunctions {
       $account->enforceIsNew();
       $account->save();
 
-      return $account;
+      return CosignSharedFunctions::cosign_login_user($account);
     }
   }
 }

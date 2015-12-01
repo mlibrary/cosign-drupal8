@@ -7,20 +7,15 @@
 
 namespace Drupal\cosign\Authentication\Provider;
 
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
-use Drupal\Component\Utility\SafeMarkup;
 use Drupal\Core\Authentication\AuthenticationProviderInterface;
-use Drupal\Core\Authentication\AuthenticationProviderChallengeInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\user\UserAuthInterface;
-use Drupal\Core\Url;
 use Symfony\Component\HttpFoundation\Request;
-use Drupal\Core\Session\UserSession;
-use Drupal\user\Authentication\Provider\Cookie;
-use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
+use Symfony\Component\HttpFoundation\Session\Session;
 
 /**
  * Cosign authentication provider.
@@ -70,14 +65,14 @@ class Cosign implements AuthenticationProviderInterface {
   public function applies(Request $request) {
     $username = CosignSharedFunctions::cosign_retrieve_remote_user();
     $drupal_user = user_load_by_name($username);
-    //TODO need to get the symfony login uid properly as drupal's is not ready yet. 
-    //This session variable is set and sticks even after user_logout() causing numerous problems. if we put cosign module priority after the user module (priority 0 or below in services.yml) the symfony session sticks and the previous user gets logged in. if we put it above the user module (above priority 0) the user gets relogged in every time because drupal's session hasn't been set yet...even though symfony's has!
-    if ($drupal_user->id() == $_SESSION['_sf2_attributes']['uid']) {
-      //the user is already logged in. symfony knows, drupal doesnt yet. bypass cosign so we dont login again 
+    //This session variable is set and sticks even after user_logout() causing numerous problems. if we put cosign module priority after the user module (priority 0 or below in services.yml) the symfony session sticks and the previous user gets logged in. if we put it above the user module (above priority 0) the user gets relogged in every time because drupal's session hasn't been set yet...even though symfony's has.
+    //TODO This should be the proper way to get this but it doesnt get it -
+    //$symfony_uid = $request->getSession()-> get('_sf2_attributes');
+    if ($drupal_user && $drupal_user->id() == $_SESSION['_sf2_attributes']['uid']) {
+      //the user is already logged in. symfony knows, drupal doesnt yet. bypass cosign so we dont login again      
       return FALSE;
     }
-    if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0 && 
-        $request->server->get('protossl') == 's' &&
+    if (CosignSharedFunctions::cosign_is_https() &&
         $request->getRequestUri() != '/user/logout' &&
         $request->getRequestUri() != '/user/login'
        ) {
@@ -93,12 +88,28 @@ class Cosign implements AuthenticationProviderInterface {
    */
   public function authenticate(Request $request) {
     $username = CosignSharedFunctions::cosign_retrieve_remote_user();
-    $is_friend_account = CosignSharedFunctions::cosign_is_friend_account($username);
-    // If friend accounts are not allowed, log them out
-    if (\Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0 && $is_friend_account) {
-      CosignSharedFunctions::cosign_friend_not_allowed();
+    if ($user = CosignSharedFunctions::cosign_user_status($username)) {
+      return $user;
+    }
+    else {
+      throw new AccessDeniedHttpException();
       return null;
     }
-    return CosignSharedFunctions::cosign_user_status($username);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function cleanup(Request $request) {}
+
+  /**
+   * {@inheritdoc}
+   */
+  public function handleException(GetResponseForExceptionEvent $event) {
+    $exception = $event->getException();
+    if ($exception instanceof AccessDeniedHttpException) {
+      return TRUE;
+    }
+    return FALSE;
   }
 }

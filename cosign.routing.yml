@@ -11,6 +11,8 @@ cosign.logout:
   defaults:
     _title: Cosign Logout
     _controller: '\Drupal\cosign\Controller\CosignController::cosign_logout'
+  options:
+    no_cache: TRUE
   requirements:
     _access: 'TRUE'
 
