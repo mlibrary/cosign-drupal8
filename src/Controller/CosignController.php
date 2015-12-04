@@ -15,35 +15,60 @@ use Symfony\Component\HttpFoundation\Cookie;
 
 class CosignController extends ControllerBase {
 
-  public function cosign_logout() {
+  public function cosign_logout(Request $request) {
+    $uname = \Drupal::currentUser()->getAccountName();
+    if (\Drupal::config('cosign.settings')->get('cosign_allow_cosign_anons') == 0 ||
+       (CosignSharedFunctions::cosign_is_friend_account($uname) && 
+       \Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0)
+      )
+    {
+      $response = CosignController::cosign_cosignlogout();
+    }
+    else {
+      if (isset($_SERVER['HTTP_REFERER'])) {
+        $referrer = $_SERVER['HTTP_REFERER'];
+      }
+      else {
+        $referrer = '/';
+      }
+      //$response = new RedirectResponse($referrer);
+      $response = array(
+        '#type' => 'markup',
+        '#title' => 'Browsing anonymously with cosign is enabled.',
+        '#markup' => t('<p>To log out of cosign go to <a href="/cosign/logout">cosign/logout</a>.</p><p>To return where you were go to <a href="'.$referrer.'">'.$referrer.'</a>.</p>'),
+      );
+    }
+    user_logout();
+    return $response;
+  }
+
+  //Send this over to an event handler after forcing https.
+  public function cosign_login(Request $request) {
+    if (!CosignSharedFunctions::cosign_is_https()) {
+      $request_uri = $request->getRequestUri();
+      return new TrustedRedirectResponse('https://' . $_SERVER['HTTP_HOST'] . $request_uri);
+    }
+    else {
+      if (isset($_SERVER['HTTP_REFERER'])) {
+        $referrer = $_SERVER['HTTP_REFERER'];
+      }
+      else {
+        $referrer = '/';
+      }
+      
+      return new RedirectResponse($referrer);
+    }
+  }
+
+  public function cosign_cosignlogout() {
     $logout = CosignSharedFunctions::cosign_logout_url();
     user_logout();
     $response = new TrustedRedirectResponse($logout);
     //this had to be done of user was logged into cosign/drupal for several minutes after logging out
-    //for ref since this was hard to find - Cookie($name, $value, $minutes, $path, $domain, $secure, $httpOnly)
+    //for ref - Cookie($name, $value, $minutes, $path, $domain, $secure, $httpOnly)
     //set value to nonsense and domain to blank so it becomes a host cookie.
-    //set the expiration to -1 so it immediately expires. otherwise, cosign has a hard time overwriting if you hit Go Back from the cosign logout screen (at umich at least)
     $response->headers->setCookie(new Cookie('cosign-'.$_SERVER['HTTP_HOST'], 'jibberish', 0, '/', '', -1, 0));
-
     return $response;
-  }
-
-  public function cosign_login() {
-    $username = CosignSharedFunctions::cosign_retrieve_remote_user();
-    //if cosign username is empty, go to https://weblogin.umich.edu/?cosign-eliotwsc-drupal8.www.lib.umich.edu&https://eliotwsc-drupal8.www.lib.umich.edu/content/test
-    if (!$username && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
-      $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$_SERVER['HTTP_HOST'];
-      if ($destination = \Drupal::destination()->getAsArray()['destination'] && $destination != 'user/login') {
-        $request_uri = $request_uri . $destination;
-      }
-      return new TrustedRedirectResponse($request_uri);
-    }
-    CosignSharedFunctions::cosign_user_status($username);
-    $request_uri = \Drupal::request()->getRequestUri();
-    if ($request_uri == '/user/login' && $username) {
-      $request_uri = '/';
-    }
-    return new RedirectResponse($request_uri);
   }
 }
 ?>

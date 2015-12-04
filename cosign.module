@@ -5,6 +5,15 @@
  * Provides Cosign authentication provider.
  */
 
+/**
+ * Implements hook_install().
+ */
+function cosign_install() {
+  // Set default values for config which require dynamic values.
+  \Drupal::configFactory()->getEditable('cosign.settings')
+    ->set('http://' . $_SERVER['HTTP_HOST'], \Drupal::config('cosign.settings')->get('cosign_logout_to'))
+    ->save();
+}
 
 /**
  * Implements hook_form_alter().

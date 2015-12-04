@@ -57,9 +57,11 @@ class CosignSharedFunctions {
       return null;
     }
     $user = \Drupal::currentUser();
-    if (!$user && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-      drupal_set_message("You do not have a valid cosign username. Browsing as anonymous user over https.");
+    if (!$user){
       $user = user_load(0);
+    }
+    if ($user->id() == 0 && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
+      drupal_set_message("You do not have a valid cosign username. Browsing as anonymous user over https.");
     }
     return $user;
   }
@@ -73,6 +75,11 @@ class CosignSharedFunctions {
   public static function cosign_login_user($drupal_user) {
     user_login_finalize($drupal_user);
     $the_user = \Drupal::currentUser();
+    $username = CosignSharedFunctions::cosign_retrieve_remote_user();
+    if ($the_user->getAccountName() != $username) {
+      \Drupal::logger('cosign')->notice('User attempted login and the cosign username: @remote_user, did not match the drupal username: @drupal_user', array('@remote_user' => $username, '@drupal_user' => $the_user->getAccountName()));
+      user_logout();
+    }
 
     return user_load($the_user->id(), TRUE);
   }
@@ -86,9 +93,13 @@ class CosignSharedFunctions {
   public static function cosign_friend_not_allowed() {
     \Drupal::logger('cosign')->notice('User attempted login using a university friend account and the friend account configuration setting is turned off: @remote_user', array('@remote_user' => $username));
     drupal_set_message(\Drupal::config('cosign.settings')->get('cosign_friend_account_message'), 'warning');
-    drupal_set_message(t('You might want to <a href="/user/logout">logout of cosign</a>'), 'warning');
-    user_logout();
-    return null;
+    if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
+      drupal_set_message(t('You might want to <a href="/user/logout">logout of cosign</a> to browse anonymously or as another cosign user.'), 'warning');
+    }
+    else {
+      user_logout();
+      return null;
+    }
   }
   
   public function cosign_logout_url() {
@@ -128,6 +139,7 @@ class CosignSharedFunctions {
    * @return
    *   Boolean TRUE or FALSE.
    */
+
   public static function cosign_is_https() {
     $is_https = FALSE;
     if (\Drupal::request()->server->get('protossl') == 's') {

@@ -74,7 +74,10 @@ class Cosign implements AuthenticationProviderInterface {
     }
     if (CosignSharedFunctions::cosign_is_https() &&
         $request->getRequestUri() != '/user/logout' &&
-        $request->getRequestUri() != '/user/login'
+        (\Drupal::config('cosign.settings')->get('cosign_allow_cosign_anons') == 0 ||
+        \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0 ||
+        strpos($request->getRequestUri(), 'user/login') ||
+        strpos($request->getRequestUri(), 'user/register'))
        ) {
       return TRUE;
     }
@@ -92,6 +95,9 @@ class Cosign implements AuthenticationProviderInterface {
       return $user;
     }
     else {
+      if (!CosignSharedFunctions::cosign_is_friend_account($username)){
+        drupal_set_message(t('This site is restricted. You may try <a href="/user/login">logging in to cosign</a>.'), 'error');
+      }
       throw new AccessDeniedHttpException();
       return null;
     }

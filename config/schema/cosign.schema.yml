@@ -12,7 +12,11 @@ cosign.settings:
       type: integer
     cosign_allow_anons_on_https:
       type: integer
+    cosign_allow_cosign_anons:
+      type: integer
     cosign_logout_path:
+      type: string
+    cosign_login_path:
       type: string
     cosign_logout_to:
       type: string

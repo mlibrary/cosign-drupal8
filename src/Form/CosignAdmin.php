@@ -73,10 +73,19 @@ class CosignAdmin extends ConfigFormBase {
     $form['cosign_allow_anons_on_https'] = [
       '#type' => 'select',
       '#title' => t('Allow anonymous users to browse over https?'),
-      '#description' => t('If yes, users are not logged in automatically to drupal at an https address even if they are logged into cosign. If no, users are logged in to drupal through cosign after hitting an https address.<br>NOTE: this should probably be set to No at the University of Michigan until cosign does not force user logins for all https addresses. This also means the logout to address should be set to http'),
+      '#description' => t('If yes, users are not logged in automatically to drupal at an https address even if they are logged into cosign. If no, users are logged in to drupal through cosign after hitting an https address.<br>NOTE: this should probably be set to No at the University of Michigan until cosign does not force user logins for all https addresses. This also means the logout to address should be set to http.<br>ALSO NOTE: if your cosign installation does not force user logins at https and you set this to No, but your site does allow anonymous http browsing, users will be unable to access the content they have access to on http over https.'),
       '#options' => $YesNo,
       '#default_value' => \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https'),
     ];
+
+    $form['cosign_allow_cosign_anons'] = [
+      '#type' => 'select',
+      '#title' => t('Allow logged in cosign users to browse anonymously?'),
+      '#description' => t('If Yes, logged in cosign users can browse the site anonymously by logging out of drupal. If No, logged in cosign users will be logged in automatically to drupal.'),
+      '#options' => $YesNo,
+      '#default_value' => \Drupal::config('cosign.settings')->get('cosign_allow_cosign_anons'),
+    ];
+
     $form['cosign_login_path'] = [
       '#type' => 'textfield',
       '#title' => t('Login Path'),
@@ -141,6 +150,19 @@ class CosignAdmin extends ConfigFormBase {
     ];
 
     return parent::buildForm($form, $form_state);
+  }
+
+  public function validateForm(array &$form, FormStateInterface $form_state) {
+    if ($form_state->getValue('cosign_allow_anons_on_https') == 0 && $form_state->getValue('cosign_allow_cosign_anons') == 1) {
+      $form_state->setErrorByName(
+        'cosign_allow_anons_on_https',
+        $this->t("Cosign users cannot browse anonymously if Anonymous users can't. Set Allow Anonymous Users to browse over https to Yes. OR")
+      );
+      $form_state->setErrorByName(
+        'cosign_allow_cosign_anons',
+        $this->t("Cosign users cannot browse anonymously if Anonymous users can't. Set Allow Cosign Users to browse anonymously to No.")
+      );
+    }
   }
 
 }

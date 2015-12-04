@@ -16,10 +16,32 @@ cosign.logout:
   requirements:
     _access: 'TRUE'
 
+cosign.cosignlogout:
+  path: /cosign/logout
+  defaults:
+    _title: Cosign Logout
+    _controller: '\Drupal\cosign\Controller\CosignController::cosign_cosignlogout'
+  options:
+    no_cache: TRUE
+  requirements:
+    _access: 'TRUE'
+
 cosign.login:
   path: /user/login
   defaults:
     _title: Cosign Login
     _controller: '\Drupal\cosign\Controller\CosignController::cosign_login'
+  options:
+    no_cache: TRUE
+  requirements:
+    _access: 'TRUE'
+
+cosign.register:
+  path: /user/register
+  defaults:
+    _title: Cosign Login
+    _controller: '\Drupal\cosign\Controller\CosignController::cosign_login'
+  options:
+    no_cache: TRUE
   requirements:
     _access: 'TRUE'

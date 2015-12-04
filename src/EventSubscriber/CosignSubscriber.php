@@ -9,31 +9,47 @@ use Symfony\Component\HttpKernel\KernelEvents;
 use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
 
 class CosignSubscriber implements EventSubscriberInterface {
-
   public function checkRedirection(FilterResponseEvent $event) {
-    $request_uri = \Drupal::request()->getRequestUri();
-    if (strpos($request_uri, 'user/login')) {
+    $request_uri = $event->getRequest()->getRequestUri();
+    if (strpos($request_uri, 'user/login') || strpos($request_uri, 'user/register')) {
       $response = $event->getResponse();
-      if (!CosignSharedFunctions::cosign_is_https()) {
-        //settargeturl will not work if not an event from a redirect (see CosignController::cosign_login controller also)
+      if (!CosignSharedFunctions::cosign_is_https() 
+        //&& strpos($response->getTargetUrl(), 'ttps://')
+      ) {
+        //settargeturl will not work if not an event from a redirect
+        //the controller takes care of a straight user/login url
+        //we can intercept the redirect route here and throw to https
         //there may be a better way to handle this
-        $response->setTargetUrl('https://' . $_SERVER['SERVER_NAME'] . $request_uri);
+//        if (!strpos($response->getTargetUrl(), 'user/login') || !strpos($response->getTargetUrl(), 'user/register')) {
+          $https_url = 'https://' . $_SERVER['HTTP_HOST'] . $request_uri;
+          $response->setTargetUrl($https_url);
+//        }
       }
       else {
-        //if cosign username is empty, go to https://weblogin.umich.edu/?cosign-eliotwsc-drupal8.www.lib.umich.edu&https://eliotwsc-drupal8.www.lib.umich.edu/content/test
-        if (!CosignSharedFunctions::cosign_retrieve_remote_user() && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
-          $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$_SERVER['HTTP_HOST'].$request_uri;
-          exit($request_uri);
-          new TrustedRedirectResponse($request_uri);
+        $destination = \Drupal::destination()->getAsArray()['destination'];
+        $username = CosignSharedFunctions::cosign_retrieve_remote_user();
+        if (!$username && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
+          $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$_SERVER['HTTP_HOST'];
+          if ($destination == '/user/login' || $destination == '/user/register') {
+            $destination = "/";
+          }
+          $request_uri = $request_uri . $destination;
         }
-        if ($request_uri == '/user/login') {
-          $request_uri = '/';
-          $response->setTargetUrl($request_uri);
+        else {
+          CosignSharedFunctions::cosign_user_status($username);
+          if ($request_uri == '/user/login' || $request_uri == '/user/register') {
+            $request_uri = '/';
+          }
+          else {
+            $request_uri = $destination;
+          }
         }
-        elseif ($request_uri = \Drupal::destination()) {
-          new RedirectResponse($request_uri);
+        if ($response instanceOf TrustedRedirectResponse) {
+           $response->setTargetUrl($request_uri);
         }
-        
+        else {
+          $event->setResponse(new TrustedRedirectResponse($request_uri));
+        }
       }
     }
   }
