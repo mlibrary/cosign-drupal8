@@ -61,7 +61,7 @@ class CosignSharedFunctions {
       $user = user_load(0);
     }
     if ($user->id() == 0 && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-      drupal_set_message("You do not have a valid cosign username. Browsing as anonymous user over https.");
+      drupal_set_message(t('You do not have a valid cosign username. Browsing as anonymous user over https.'));
     }
     return $user;
   }

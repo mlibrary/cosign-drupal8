@@ -29,9 +29,11 @@ class CosignController extends ControllerBase {
         $referrer = $_SERVER['HTTP_REFERER'];
       }
       else {
-        $referrer = '/';
+        global $base_path;
+        $referrer = $base_path;
       }
       //$response = new RedirectResponse($referrer);
+      //TODO - use $link = Link::fromTextAndUrl($text, $url);
       $response = array(
         '#type' => 'markup',
         '#title' => 'Browsing anonymously with cosign is enabled.',
@@ -44,8 +46,17 @@ class CosignController extends ControllerBase {
 
   //Send this over to an event handler after forcing https.
   public function cosign_login(Request $request) {
+    $request_uri = $request->getRequestUri();
+    global $base_path;
+    if ($request_uri == $base_path){
+      $response = array(
+        '#type' => 'markup',
+        '#title' => 'The home page is set to /user.',
+        '#markup' => t('<p>Cosign does not work well unless the home page is set to something else such as /node. It can be changed at <a href="'.$base_path.'admin/config/system/site-information">'.$base_path.'admin/config/system/site-information</a>.</p>'),
+      );
+      return $response;
+    }
     if (!CosignSharedFunctions::cosign_is_https()) {
-      $request_uri = $request->getRequestUri();
       return new TrustedRedirectResponse('https://' . $_SERVER['HTTP_HOST'] . $request_uri);
     }
     else {
@@ -53,10 +64,10 @@ class CosignController extends ControllerBase {
         $referrer = $_SERVER['HTTP_REFERER'];
       }
       else {
-        $referrer = '/';
+        $referrer = $base_path;
       }
       
-      return new RedirectResponse($referrer);
+      return new TrustedRedirectResponse($referrer);
     }
   }
 
