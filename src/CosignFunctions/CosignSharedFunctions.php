@@ -30,7 +30,7 @@ class CosignSharedFunctions {
       }
     }
     if (!empty($cosign_username)){
-      $is_friend_account = CosignSharedFunctions::cosign_is_friend_account($username);
+      $is_friend_account = CosignSharedFunctions::cosign_is_friend_account($cosign_username);
       // If friend accounts are not allowed, log them out
       if (\Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0 && $is_friend_account) {
         CosignSharedFunctions::cosign_friend_not_allowed();
@@ -48,8 +48,14 @@ class CosignSharedFunctions {
     }
     elseif (!empty($cosign_username) && empty($drupal_user)) {
       //cosign user doesn't have a drupal account
-      $new_user = CosignSharedFunctions::cosign_create_new_user($cosign_username);
-      user_load($new_user->id(), TRUE);
+      if (\Drupal::config('cosign.settings')->get('cosign_autocreate') == 1) {
+        $new_user = CosignSharedFunctions::cosign_create_new_user($cosign_username);
+        user_load($new_user->id(), TRUE);
+      }
+      else {
+        //drupal_set_message(t('This site does not auto create users from cosign. Please contact the <a href="mailto:'. \Drupal::config("system.site")->get("mail").'">site administrator</a> to have an account created.'), 'warning');
+        user_load(0);
+      }
     }
     elseif (empty($cosign_username) && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0){
       //no cosign account found
@@ -61,7 +67,7 @@ class CosignSharedFunctions {
       $user = user_load(0);
     }
     if ($user->id() == 0 && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-      drupal_set_message(t('You do not have a valid cosign username. Browsing as anonymous user over https.'));
+      //drupal_set_message(t('You do not have a valid cosign username. Browsing as anonymous user over https.'));
     }
     return $user;
   }
@@ -92,7 +98,7 @@ class CosignSharedFunctions {
    */
   public static function cosign_friend_not_allowed() {
     \Drupal::logger('cosign')->notice('User attempted login using a university friend account and the friend account configuration setting is turned off: @remote_user', array('@remote_user' => $username));
-    drupal_set_message(\Drupal::config('cosign.settings')->get('cosign_friend_account_message'), 'warning');
+    drupal_set_message(t(\Drupal::config('cosign.settings')->get('cosign_friend_account_message')), 'warning');
     if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
       drupal_set_message(t('You might want to <a href="/user/logout">logout of cosign</a> to browse anonymously or as another cosign user.'), 'warning');
     }

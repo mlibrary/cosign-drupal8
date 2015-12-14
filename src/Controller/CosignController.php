@@ -48,19 +48,30 @@ class CosignController extends ControllerBase {
   public function cosign_login(Request $request) {
     $request_uri = $request->getRequestUri();
     global $base_path;
-    if ($request_uri == $base_path){
-      $response = array(
-        '#type' => 'markup',
-        '#title' => 'The home page is set to /user.',
-        '#markup' => t('<p>Cosign does not work well unless the home page is set to something else such as /node. It can be changed at <a href="'.$base_path.'admin/config/system/site-information">'.$base_path.'admin/config/system/site-information</a>.</p>'),
-      );
-      return $response;
-    }
     if (!CosignSharedFunctions::cosign_is_https()) {
       return new TrustedRedirectResponse('https://' . $_SERVER['HTTP_HOST'] . $request_uri);
     }
     else {
-      if (isset($_SERVER['HTTP_REFERER'])) {
+      if ($request_uri == $base_path){
+        //The front page is set to /user. we have to login here to avoid a redirect loop
+        $username = CosignSharedFunctions::cosign_retrieve_remote_user();
+        $user = CosignSharedFunctions::cosign_user_status($username);
+        if (empty($user) || $user->id() == 0) {
+          $response = array(
+            '#type' => 'markup',
+            '#title' => 'Auto creation of user accounts is disabled.',
+            '#markup' => t('<p>This site does not auto create users from cosign. Please contact the <a href="mailto:'. \Drupal::config("system.site")->get("mail").'">site administrator</a> to have an account created.</p>'),
+          );
+          return $response;
+        }
+        else {
+          if (in_array('administrator', $user->getRoles())) {
+            drupal_set_message('When the homepage is set to /user (Drupal default), anonymous browsing will not always work', 'warning');
+          }
+          $referrer = $base_path.'user';
+        }
+      }
+      elseif (isset($_SERVER['HTTP_REFERER'])) {
         $referrer = $_SERVER['HTTP_REFERER'];
       }
       else {
