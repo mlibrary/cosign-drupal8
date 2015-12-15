@@ -7,6 +7,7 @@ cosign_allow_cosign_anons: 0
 cosign_logout_path: 'https://weblogin.umich.edu/cgi-bin/logout'
 cosign_login_path: 'https://weblogin.umich.edu/'
 cosign_logout_to: ''
+cosign_branded: 'Cosign'
 cosign_friend_account_message: 'Friend accounts are not allowed on this site'
 cosign_invalid_login_message: 'Your cosign user name is invalid'
 cosignautocreate_email_domain: 'umich.edu'

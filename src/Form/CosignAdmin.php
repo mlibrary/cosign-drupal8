@@ -47,6 +47,16 @@ class CosignAdmin extends ConfigFormBase {
 
   public function buildForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
 
+    $form['cosign_branded'] = [
+      '#type' => 'textfield',
+      '#title' => t('Brand Cosign'),
+      '#default_value' => \Drupal::config('cosign.settings')->get('cosign_branded'),
+      '#size' => 80,
+      '#maxlength' => 200,
+      '#required' => TRUE,
+      '#description' => t("Enter what you want Cosign to be called if your organization brands it differently."),
+    ];
+
     $form['cosign_logout_path'] = [
       '#type' => 'textfield',
       '#title' => t('Logout Path'),

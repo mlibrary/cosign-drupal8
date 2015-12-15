@@ -26,3 +26,5 @@ cosign.settings:
       type: string
     cosignautocreate_email_domain:
       type: string
+    cosign_branded:
+      type: string

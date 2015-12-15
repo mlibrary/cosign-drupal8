@@ -33,8 +33,11 @@ function cosign_form_alter(&$form, \Drupal\Core\Form\FormStateInterface &$form_s
 */
 
   if ($form_id == "user_form") {
-    $the_user = \Drupal::currentUser();
-    if (!in_array('administrator', $the_user->getRoles())) {
+    $user = \Drupal::currentUser();
+    //admin role can now be named anything
+    $is_admin = array_intersect(\Drupal::entityQuery('user_role')->condition('is_admin', TRUE)->execute(), $user->getRoles());
+    //if not an admin, hide these fields
+    if (empty($is_admin)) {
       if (isset($form['account']['name'])) {
         $form['account']['name']['#type'] = 'hidden';
       }
@@ -49,12 +52,10 @@ function cosign_form_alter(&$form, \Drupal\Core\Form\FormStateInterface &$form_s
 /**
  * Implements hook_help().
  */
-function cosign_help($path, $arg) {
-  switch ($path) {
-    case 'admin/modules#description':
-      return t("Allows users to authenticate via Cosign.");
-
-    case "admin/help#cosign":
-      return '<p>' . t("Allows users to authenticate via Cosign") . '</p>';
+function cosign_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+  $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
+  switch ($route_name) {
+    case "help.page.cosign":
+      return '<p>' . t("Allows users to authenticate via ".$cosign_brand.".") . '</p>';
   }
 }

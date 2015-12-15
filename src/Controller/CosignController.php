@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
+use Drupal\cosign\Form\CosignLogout;
 use Symfony\Component\HttpFoundation\Cookie;
 
 class CosignController extends ControllerBase {
@@ -25,20 +26,13 @@ class CosignController extends ControllerBase {
       $response = CosignController::cosign_cosignlogout();
     }
     else {
-      if (isset($_SERVER['HTTP_REFERER'])) {
-        $referrer = $_SERVER['HTTP_REFERER'];
-      }
-      else {
-        global $base_path;
-        $referrer = $base_path;
-      }
-      //$response = new RedirectResponse($referrer);
-      //TODO - use $link = Link::fromTextAndUrl($text, $url);
-      $response = array(
-        '#type' => 'markup',
-        '#title' => 'Browsing anonymously with cosign is enabled.',
-        '#markup' => t('<p>To log out of cosign go to <a href="/cosign/logout">cosign/logout</a>.</p><p>To return where you were go to <a href="'.$referrer.'">'.$referrer.'</a>.</p>'),
-      );
+      $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
+      $request->attributes->get(\Symfony\Cmf\Component\Routing\RouteObjectInterface::ROUTE_OBJECT)->setDefault('_title', 'Would you like to logout of '.$cosign_brand.' also?');
+      $form_class = '\Drupal\cosign\Form\CosignLogout';
+      $response['form'] = \Drupal::formBuilder()->getForm($form_class);
+    }
+    if (!empty($uname)){
+      drupal_set_message('User '.$uname.' successfully logged out of '.\Drupal::config("system.site")->get("name"), 'status', FALSE);
     }
     user_logout();
     return $response;
@@ -57,15 +51,18 @@ class CosignController extends ControllerBase {
         $username = CosignSharedFunctions::cosign_retrieve_remote_user();
         $user = CosignSharedFunctions::cosign_user_status($username);
         if (empty($user) || $user->id() == 0) {
+          $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
           $response = array(
             '#type' => 'markup',
             '#title' => 'Auto creation of user accounts is disabled.',
-            '#markup' => t('<p>This site does not auto create users from cosign. Please contact the <a href="mailto:'. \Drupal::config("system.site")->get("mail").'">site administrator</a> to have an account created.</p>'),
+            '#markup' => t('<p>This site does not auto create users from '.$cosign_brand.'. Please contact the <a href="mailto:'. \Drupal::config("system.site")->get("mail").'">site administrator</a> to have an account created.</p>'),
           );
           return $response;
         }
         else {
-          if (in_array('administrator', $user->getRoles())) {
+          //admin role can now be named anything
+          $is_admin = array_intersect(\Drupal::entityQuery('user_role')->condition('is_admin', TRUE)->execute(), $user->getRoles());
+          if (!empty($is_admin) && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
             drupal_set_message('When the homepage is set to /user (Drupal default), anonymous browsing will not always work', 'warning');
           }
           $referrer = $base_path.'user';
