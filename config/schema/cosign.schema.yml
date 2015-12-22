@@ -1,5 +1,5 @@
 cosign.settings:
-  type: mapping
+  type: config_object
   label: Settings
   mapping:
     cosign_allow_friend_accounts:

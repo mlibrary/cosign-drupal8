@@ -9,10 +9,12 @@
  * Implements hook_install().
  */
 function cosign_install() {
-  // Set default values for config which require dynamic values.
-  \Drupal::configFactory()->getEditable('cosign.settings')
-    ->set('http://' . $_SERVER['HTTP_HOST'], \Drupal::config('cosign.settings')->get('cosign_logout_to'))
-    ->save();
+  if (isset($_SERVER['HTTP_HOST'])) {
+    // Set default values for config which require dynamic values.
+    \Drupal::configFactory()->getEditable('cosign.settings')
+      ->set('cosign_logout_to', 'http://' . $_SERVER['HTTP_HOST'])
+      ->save();
+  }
 }
 
 /**

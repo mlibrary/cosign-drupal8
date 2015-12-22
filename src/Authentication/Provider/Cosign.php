@@ -68,7 +68,7 @@ class Cosign implements AuthenticationProviderInterface {
     //This session variable is set and sticks even after user_logout() causing numerous problems. if we put cosign module priority after the user module (priority 0 or below in services.yml) the symfony session sticks and the previous user gets logged in. if we put it above the user module (above priority 0) the user gets relogged in every time because drupal's session hasn't been set yet...even though symfony's has.
     //TODO This should be the proper way to get this but it doesnt get it -
     //$symfony_uid = $request->getSession()-> get('_sf2_attributes');
-    if ($drupal_user && $drupal_user->id() == $_SESSION['_sf2_attributes']['uid']) {
+    if (isset($_SESSION['_sf2_attributes']['uid']) && isset($drupal_user) && $drupal_user->id() == $_SESSION['_sf2_attributes']['uid']) {
       //the user is already logged in. symfony knows, drupal doesnt yet. bypass cosign so we dont login again      
       return FALSE;
     }

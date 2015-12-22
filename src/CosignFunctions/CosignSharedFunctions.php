@@ -101,7 +101,7 @@ class CosignSharedFunctions {
     drupal_set_message(t(\Drupal::config('cosign.settings')->get('cosign_friend_account_message')), 'warning');
     if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
       $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
-      drupal_set_message(t('You might want to <a href="/user/logout">logout of '$cosign_brand.'</a> to browse anonymously or as another '.$cosign_brand.' user.'), 'warning');
+      drupal_set_message(t('You might want to <a href="/user/logout">logout of '.$cosign_brand.'</a> to browse anonymously or as another '.$cosign_brand.' user.'), 'warning');
     }
     else {
       user_logout();
