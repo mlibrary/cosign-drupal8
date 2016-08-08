@@ -1,3 +1,17 @@
+cosign.banpassword:
+  path: /user/password
+  defaults:
+    _title: No Access
+  requirements:
+    _access: 'FALSE'
+
+cosign.banreset:
+  path: /user/reset/{uid}/{timestamp}/{hash}
+  defaults:
+    _title: No Access
+  requirements:
+    _access: 'FALSE'
+
 cosign.admin:
   path: /admin/config/system/cosign
   defaults:
