@@ -36,6 +36,9 @@ class CosignAdmin extends ConfigFormBase {
     }
 
     parent::submitForm($form, $form_state);
+
+    //clear all routing caches to update any changed settings.
+    \Drupal::service("router.builder")->rebuild();
   }
 
   /**
@@ -157,6 +160,14 @@ class CosignAdmin extends ConfigFormBase {
       '#title' => t('Message displayed to users after they authenticate to Cosign with a friend account'),
       '#default_value' => \Drupal::config('cosign.settings')->get('cosign_friend_account_message'),
       '#description' => t("This message is only relevant if you have 'Allow friend accounts' set to 'No'. When a friend account user logs in, this message will tell them that they don't have access."),
+    ];
+
+    $form['cosign_ban_password_resets'] = [
+      '#type' => 'select',
+      '#title' => t('Ban users access to the /user/password and /user/reset core functions'),
+      '#description' => t('If Yes, users cannot change their drupal passwords.'),
+      '#options' => $YesNo,
+      '#default_value' => \Drupal::config('cosign.settings')->get('cosign_ban_password_resets'),
     ];
 
     return parent::buildForm($form, $form_state);
