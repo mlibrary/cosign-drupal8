@@ -1,10 +1,5 @@
 <?php
 
-/**
- * @file
- * Contains \Drupal\cosign\Authentication\Provider\Cosign.
- */
-
 namespace Drupal\cosign\Authentication\Provider;
 
 use Drupal\Core\Authentication\AuthenticationProviderInterface;
@@ -15,7 +10,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Event\GetResponseForExceptionEvent;
-use Symfony\Component\HttpFoundation\Session\Session;
 
 /**
  * Cosign authentication provider.
@@ -44,6 +38,13 @@ class Cosign implements AuthenticationProviderInterface {
   protected $entityManager;
 
   /**
+   * The cosign shared service.
+   *
+   * @var \Drupal\cosign\CosignFunctions\CosignSharedFunctions
+   */
+   protected $cosignShared;
+
+  /**
    * Constructs a Cosign provider object.
    *
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
@@ -52,30 +53,40 @@ class Cosign implements AuthenticationProviderInterface {
    *   The user authentication service.
    * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    *   The entity manager service.
+   * @param \Drupal\cosign\CosignFunctions\CosignSharedFunctions $cosign_shared
+   *   The cosign shared service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, UserAuthInterface $user_auth, EntityManagerInterface $entity_manager) {
+  public function __construct(ConfigFactoryInterface $config_factory, UserAuthInterface $user_auth, EntityManagerInterface $entity_manager, CosignSharedFunctions $cosign_shared) {
     $this->configFactory = $config_factory;
     $this->userAuth = $user_auth;
     $this->entityManager = $entity_manager;
+    $this->cosignShared = $cosign_shared;
   }
 
   /**
    * {@inheritdoc}
    */
   public function applies(Request $request) {
-    $username = CosignSharedFunctions::cosign_retrieve_remote_user();
+    $username = $this->cosignShared->cosignRetrieveRemoteUser();
     $drupal_user = user_load_by_name($username);
-    //This session variable is set and sticks even after user_logout() causing numerous problems. if we put cosign module priority after the user module (priority 0 or below in services.yml) the symfony session sticks and the previous user gets logged in. if we put it above the user module (above priority 0) the user gets relogged in every time because drupal's session hasn't been set yet...even though symfony's has.
-    //TODO This should be the proper way to get this but it doesnt get it -
-    //$symfony_uid = $request->getSession()-> get('_sf2_attributes');
+    // This session variable is set and sticks even after user_logout().
+    // If we put cosign priority after the user module
+    // (priority 0 or below in services.yml),
+    // the symfony session sticks and the previous user gets logged in.
+    // If we put it above the user module (above priority 0)
+    // the user gets relogged in every time because
+    // drupal's session hasn't been set yet...even though symfony's has.
+    // TODO This should be the proper way to get this but it doesnt get it -
+    /* $symfony_uid = $request->getSession()-> get('_sf2_attributes'); */
     if (isset($_SESSION['_sf2_attributes']['uid']) && !empty($drupal_user) && $drupal_user->id() == $_SESSION['_sf2_attributes']['uid']) {
-      //the user is already logged in. symfony knows, drupal doesnt yet. bypass cosign so we dont login again      
+      // The user is already logged in. symfony knows, drupal doesnt yet.
+      // Bypass cosign so we dont login again.
       return FALSE;
     }
-    if (CosignSharedFunctions::cosign_is_https() &&
+    if ($this->cosignShared->cosignIsHttps() &&
         $request->getRequestUri() != '/user/logout' &&
-        (\Drupal::config('cosign.settings')->get('cosign_allow_cosign_anons') == 0 ||
-        \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0 ||
+        ($this->configFactory->get('cosign.settings')->get('cosign_allow_cosign_anons') == 0 ||
+        $this->configFactory->get('cosign.settings')->get('cosign_allow_anons_on_https') == 0 ||
         strpos($request->getRequestUri(), 'user/login') ||
         strpos($request->getRequestUri(), 'user/register'))
        ) {
@@ -90,17 +101,16 @@ class Cosign implements AuthenticationProviderInterface {
    * {@inheritdoc}
    */
   public function authenticate(Request $request) {
-    $username = CosignSharedFunctions::cosign_retrieve_remote_user();
-    if ($user = CosignSharedFunctions::cosign_user_status($username)) {
+    $username = $this->cosignShared->cosignRetrieveRemoteUser();
+    if ($user = $this->cosignShared->cosignUserStatus($username)) {
       return $user;
     }
     else {
-      if (!CosignSharedFunctions::cosign_is_friend_account($username)){
-        $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
-        drupal_set_message(t('This site is restricted. You may try <a href="/user/login">logging in to '.$cosign_brand.'</a>.'), 'error');
+      if (!$this->cosignShared->cosignIsFriendAccount($username)) {
+        $cosign_brand = $this->configFactory->get('cosign.settings')->get('cosign_branded');
+        drupal_set_message(t('This site is restricted. You may try <a href="/user/login">logging in to @cosign_brand</a>.', [@cosign_brand => $cosign_brand]), 'error');
       }
       throw new AccessDeniedHttpException();
-      return null;
     }
   }
 
@@ -119,4 +129,5 @@ class Cosign implements AuthenticationProviderInterface {
     }
     return FALSE;
   }
+
 }

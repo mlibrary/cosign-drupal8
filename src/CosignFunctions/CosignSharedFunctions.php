@@ -1,117 +1,174 @@
 <?php
 
-/**
- * @file
- * Contains Drupal\cosign\CosignFunctions\CosignSharedFunctions.
- */
-
 namespace Drupal\cosign\CosignFunctions;
+
+use Drupal\Core\Logger\LoggerChannelFactory;
+use Drupal\Core\Config\ConfigFactoryInterface;
+use Drupal\Core\Session\AccountProxyInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Drupal\user\Entity\User;
 
 /**
  * Cosign shared functions.
  */
 class CosignSharedFunctions {
+
   /**
-   * Check whether user is loggedin to cosign, is a drupal user, and is logged into drupal
+   * The config factory.
    *
-   * @return
+   * @var \Drupal\Core\Config\ConfigFactoryInterface
+   */
+  protected $configFactory;
+
+  /**
+   * The current user.
+   *
+   * @var \Drupal\Core\Session\AccountProxyInterface
+   */
+  protected $currentUser;
+
+  /**
+   * The request.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $request;
+
+  /**
+   * The logger.
+   *
+   * @var \Drupal\Core\Logger\LoggerChannelFactory
+   */
+  protected $logger;
+
+  /**
+   * Constructs a Cosign event subscriber.
+   *
+   * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
+   *   The config factory.
+   * @param \Drupal\Core\Session\AccountProxyInterface $current_user
+   *   The user.
+   * @param \Symfony\Component\HttpFoundation\RequestStack $http_request
+   *   The request.
+   * @param \Drupal\Core\Logger\LoggerChannelFactory $logger_interface
+   *   The logger.
+   */
+  public function __construct(ConfigFactoryInterface $config_factory, AccountProxyInterface $current_user, RequestStack $http_request, LoggerChannelFactory $logger_interface) {
+    $this->configFactory = $config_factory;
+    $this->currentUser = $current_user;
+    $this->request = $http_request;
+    $this->logger = $logger_interface;
+  }
+
+  /**
+   * Check if user is logged into cosign, a drupal user, and logged into drupal.
+   *
+   * @return \Drupal\Core\Session\AccountProxyInterface
+   *   Account object
+   */
+  public function cosignUserStatus($cosign_username) {
+    $user = NULL;
+    $current_uname = $this->currentUser->getAccountName();
+    $is_friend = $this->cosignIsFriendAccount($cosign_username);
+    $allow_friends = $this->cosignGetSettings('cosign_allow_friend_accounts');
+    $allow_anons = $this->cosignGetSettings('cosign_allow_anons_on_https');
+    if (!$allow_friends && $is_friend) {
+      $this->cosignFriendNotAllowed($cosign_username);
+      $cosign_username = '';
+    }
+    if (empty($cosign_username) && $allow_anons) {
+      $user = $this->cosignLoadUser(0);
+    }
+    elseif (($allow_friends || !$is_friend) && ($cosign_username == $current_uname)) {
+      $user = $this->cosignLoadUser($cosign_username);
+    }
+    else {
+      $this->cosignglobalfuncs('user_logout');
+      $drupal_user = $this->cosignLoadUser($cosign_username);
+      $autocreate = $this->cosignGetSettings('cosign_autocreate');
+      if ($drupal_user) {
+        $user = $drupal_user;
+      }
+      elseif ($autocreate) {
+        $new_user =  $this->cosignCreateNewUser($cosign_username);
+        $user = $this->cosignLoadUser($new_user->id());
+      }
+    }
+    if ($user === NULL) {
+       $this->cosignglobalfuncs('user_logout');
+       return NULL;
+    }
+
+    return $this->cosignLogInUser($user);
+  }
+
+  /**
+   * Helper function for cosignUserStatus.
+   * Allows for easier testing.
+   *
+   * @return \Drupal\Core\Session\AccountProxyInterface
    *   User object
    */
-  public static function cosign_user_status($cosign_username) {
-    $user = \Drupal::currentUser();
-    $uname = $user->getAccountName();
-    $drupal_user = user_load_by_name($cosign_username);
-    if (!empty($uname)) {
-      //youre already logged in
-      //make sure you are the cosign user. if not log out. This is unlikely
-      if ($cosign_username != $uname) {
-        user_logout();
-        return null;
-      }
-    }
-    if (!empty($cosign_username)){
-      $is_friend_account = CosignSharedFunctions::cosign_is_friend_account($cosign_username);
-      // If friend accounts are not allowed, log them out
-      if (\Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0 && $is_friend_account) {
-        CosignSharedFunctions::cosign_friend_not_allowed();
-        if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-          return user_load(0);
-        }
-        else {
-          return null;
-        }
-      }
-    }
-    if (!empty($cosign_username) && !empty($drupal_user) && empty($uname)) {
-      //login the cosign user
-      CosignSharedFunctions::cosign_login_user($drupal_user);
-    }
-    elseif (!empty($cosign_username) && empty($drupal_user)) {
-      //cosign user doesn't have a drupal account
-      if (\Drupal::config('cosign.settings')->get('cosign_autocreate') == 1) {
-        $new_user = CosignSharedFunctions::cosign_create_new_user($cosign_username);
-        user_load($new_user->id(), TRUE);
-      }
-      else {
-        //drupal_set_message(t('This site does not auto create users from cosign. Please contact the <a href="mailto:'. \Drupal::config("system.site")->get("mail").'">site administrator</a> to have an account created.'), 'warning');
-        user_load(0);
-      }
-    }
-    elseif (empty($cosign_username) && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0){
-      //no cosign account found
-      user_logout();
-      return null;
-    }
-    $user = \Drupal::currentUser();
-    if (!$user){
-      $user = user_load(0);
-    }
-    if ($user->id() == 0 && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-      //drupal_set_message(t('You do not have a valid cosign username. Browsing as anonymous user over https.'));
-    }
-    return $user;
+  public static function cosignGetUserStatus() {
+    
   }
 
   /**
-   * Logs cosign user into drupal
+   * Logs cosign user into drupal.
    *
-   * @return
+   * @return \Drupal\Core\Session\AccountProxyInterface
    *   User Object
    */
-  public static function cosign_login_user($drupal_user) {
-    user_login_finalize($drupal_user);
-    $the_user = \Drupal::currentUser();
-    $username = CosignSharedFunctions::cosign_retrieve_remote_user();
-    if ($the_user->getAccountName() != $username) {
-      \Drupal::logger('cosign')->notice('User attempted login and the cosign username: @remote_user, did not match the drupal username: @drupal_user', array('@remote_user' => $username, '@drupal_user' => $the_user->getAccountName()));
-      user_logout();
+  public function cosignLogInUser($drupal_user) {
+    $username =  $this->cosignRetrieveRemoteUser();
+    if ($drupal_user->getAccountName() != $username) {
+      $this->logger->get('cosign')->notice('User attempted login and the cosign username: @remote_user, did not match the drupal username: @drupal_user', ['@remote_user' => $username, '@drupal_user' => $drupal_user->getAccountName()]);
+      $this->cosignglobalfuncs('user_logout');
     }
+    $this->cosignglobalfuncs('user_login_finalize', $drupal_user);
 
-    return user_load($the_user->id(), TRUE);
+    return $this->currentUser;
   }
 
   /**
-   * Performs tasks if friend accounts arent allowed
+   * Performs tasks if friend accounts arent allowed.
    *
-   * @return
-   *   null
+   * @return null
+   *   NULL
    */
-  public static function cosign_friend_not_allowed() {
-    \Drupal::logger('cosign')->notice('User attempted login using a university friend account and the friend account configuration setting is turned off: @remote_user', array('@remote_user' => $username));
-    drupal_set_message(t(\Drupal::config('cosign.settings')->get('cosign_friend_account_message')), 'warning');
-    if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
-      $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
-      drupal_set_message(t('You might want to <a href="/user/logout">logout of '.$cosign_brand.'</a> to browse anonymously or as another '.$cosign_brand.' user.'), 'warning');
+  public static function cosignFriendNotAllowed($username) {
+    $this->logger->get('cosign')->notice('User attempted login using a university friend account and the friend account configuration setting is turned off: @remote_user', ['@remote_user' => $username]);
+    drupal_set_message($this->cosignGetSettings('cosign_friend_account_message'), 'warning');
+    if ($this->cosignGetSettings('cosign_allow_anons_on_https')) {
+      $cosign_brand = $this->cosignGetSettings('cosign_branded');
+      drupal_set_message(t('You might want to <a href="/user/logout">logout of @cosign_brand</a> to browse anonymously or as another @cosign_brand user.', ['@cosign_brand' => $cosign_brand]), 'warning');
     }
     else {
       user_logout();
-      return null;
+      return NULL;
     }
   }
-  
-  public function cosign_logout_url() {
-    $logout_path = \Drupal::config('cosign.settings')->get('cosign_logout_path');
-    $logout_to = \Drupal::config('cosign.settings')->get('cosign_logout_to');
+
+  /**
+   * Cosign logout.
+   *
+   * @return url
+   *   the logout url
+   */
+  public function cosignLogoutUrl() {
+    $logout_path = $this->cosignGetSettings('cosign_logout_path');
+    $logout_to = $this->cosignGetSettings('cosign_logout_to');
+    return self::cosignGetLogoutUrl($logout_path, $logout_to);
+  }
+
+  /**
+   * Helper function for cosignLogoutUrl.
+   * Allows for easier testing.
+   *
+   * @return url
+   *   the logout url
+   */
+  public static function cosignGetLogoutUrl($logout_path, $logout_to) {
     return $logout_path . '?' . $logout_to;
   }
 
@@ -121,17 +178,31 @@ class CosignSharedFunctions {
    * If the user is logged in to cosign webserver auth, the remote user variable
    * will contain the name of the user logged in.
    *
-   * @return
+   * @return string
    *   String username or empty string.
    */
-  public static function cosign_retrieve_remote_user() {
+  public function cosignRetrieveRemoteUser() {
+    $redirect_remote_user = $this->cosignglobalfuncs('getServerVar', 'REDIRECT_REMOTE_USER');
+    $remote_user = $this->cosignglobalfuncs('getServerVar', 'REMOTE_USER');
+
+    return self::cosignGetRemoteUser($redirect_remote_user, $remote_user);
+  }
+
+  /**
+   * Helper function for cosignRetrieveRemoteUser.
+   * Allows for easier testing.
+   *
+   * @return string
+   *   String username or empty string.
+   */
+  public static function cosignGetRemoteUser($redirect_remote_user, $remote_user) {
     $cosign_name = '';
     // Make sure we get the remote user whichever way it is available.
-    if (isset($_SERVER['REDIRECT_REMOTE_USER'])) {
-      $cosign_name = $_SERVER['REDIRECT_REMOTE_USER'];
+    if (!empty($redirect_remote_user)) {
+      $cosign_name = $redirect_remote_user;
     }
-    elseif (isset($_SERVER['REMOTE_USER'])) {
-      $cosign_name = $_SERVER['REMOTE_USER'];
+    elseif (!empty($remote_user)) {
+      $cosign_name = $remote_user;
     }
 
     return $cosign_name;
@@ -140,16 +211,26 @@ class CosignSharedFunctions {
   /**
    * Attempts to retrieve the protossl from the $_SERVER variable.
    *
-   * We need to check for https on logins. 
-   * since we need to intercept redirects from routes and events, this is a shared function
+   * We need to check for https on logins.
+   * We need to intercept redirects from routes and events.
    *
-   * @return
+   * @return bool
    *   Boolean TRUE or FALSE.
    */
+  public function cosignIsHttps() {
+    return self::cosignCheckHttps($this->request->getCurrentRequest()->server->get('protossl'));
+  }
 
-  public static function cosign_is_https() {
+  /**
+   * Helper function for cosignIsHttps.
+   * Allows for easier testing.
+   *
+   * @return bool
+   *   Boolean TRUE or FALSE.
+   */
+  public static function cosignCheckHttps($request_protossl) {
     $is_https = FALSE;
-    if (\Drupal::request()->server->get('protossl') == 's') {
+    if ($request_protossl == 's') {
       $is_https = TRUE;
     }
 
@@ -159,46 +240,122 @@ class CosignSharedFunctions {
   /**
    * Attempts to retrieve the remote realm from the $_SERVER variable.
    *
-   * If the user is logged in to cosign webserver auth, the remote realm variable
+   * If the user is logged in to cosign webserver auth,
+   * the remote realm variable
    * will contain friend or UMICH.EDU (or some other implemetation).
    *
-   * @return
+   * @return bool
    *   Boolean TRUE or FALSE.
    */
-  public static function cosign_is_friend_account($username) {
+  public function cosignIsFriendAccount($username) {
+    return self::cosignCheckFriendAccount($username, $this->cosignglobalfuncs('getServerVar', 'REMOTE_REALM'));
+  }
+
+  /**
+   * Helper function for cosignIsFriendAccount.
+   * Allows for easier testing.
+   *
+   * @return bool
+   *   Boolean TRUE or FALSE.
+   */
+  public static function cosignCheckFriendAccount($username, $server_friend) {
     // Make sure we get friend whichever way it is available.
     $is_friend_account = FALSE;
-    if ($_SERVER['REMOTE_REALM'] == 'friend' || stristr($username, '@')) {
+    if ($server_friend == 'friend' || stristr($username, '@')) {
       $is_friend_account = TRUE;
     }
 
     return $is_friend_account;
   }
+  
+  /**
+   * Create and login a Drupal user.
+   *
+   * @return bool
+   *   Boolean TRUE or FALSE.
+   */
+  public function cosignCreateNewUser($cosign_name) {
+    if ($autocreate = $this->cosignGetSettings('cosign_autocreate')) {
+      $new_user = self::cosignNewUserVars($cosign_name, $this->cosignglobalfuncs('user_password'), $this->cosignGetSettings('cosignautocreate_email_domain'), $this->cosignIsFriendAccount($cosign_name));
+      $user = User::create($new_user);
+      $user->enforceIsNew();
+      $user->save();
+      $this->cosignLogInUser($user);
+    }
+
+    return $autocreate;
+  }
 
   /**
-   * Creates a new drupal user with the cosign username and email address with domain from admin form.
+   * Set New User Vars.
+   * Helper function for cosignCreateNewUser.
+   * Allows for easier testing.
    *
-   * @return
-   *   Object user account.
+   * @return array
+   *   Array().
    */
-  public static function cosign_create_new_user($cosign_name){
-    if (\Drupal::config('cosign.settings')->get('cosign_autocreate') == 1) {
-      $new_user = array();
-      $new_user['name'] = $cosign_name;
-      $new_user['status'] = 1;
-      $new_user['password'] = user_password();
-      if (CosignSharedFunctions::cosign_is_friend_account($cosign_name)) {
-        // friend account
-        $new_user['mail'] = $cosign_name;
-      }
-      else{
-        $new_user['mail'] = $cosign_name . '@' . \Drupal::config('cosign.settings')->get('cosignautocreate_email_domain');
-      }
-      $account = entity_create('user', $new_user);
-      $account->enforceIsNew();
-      $account->save();
+  public static function cosignNewUserVars($cosign_name, $pwd, $email, $is_friend = 0) {
+    $new_user = [];
+    $new_user['name'] = $cosign_name;
+    $new_user['status'] = 1;
+    $new_user['password'] = $pwd;
+    $new_user['mail'] = $cosign_name . '@' . $email;
+    if ($is_friend) {
+      $new_user['mail'] = $cosign_name;
+    }
 
-      return CosignSharedFunctions::cosign_login_user($account);
+    return $new_user;
+  }
+
+  /**
+   * Get a cosign setting var.
+   * Helper function to get cosign settings.
+   * Allows for easier testing.
+   *
+   */
+  private function cosignGetSettings($cosign_setting) {
+    return $this->configFactory->get('cosign.settings')->get($cosign_setting);
+  }
+
+  /**
+   * Helper function for drupal global functions.
+   * Allows for easier testing.
+   *
+   */
+  public function cosignglobalfuncs($func_name, $args = NULL) {
+    switch ($func_name) {
+      case 'user_login_finalize':
+        return user_login_finalize($args);
+        break;
+      case 'user_logout':
+        return user_logout();
+        break;
+      case 'user_password':
+        return user_password();
+        break;
+      case 'getServerVar':
+        if (isset($_SERVER[$args])) {
+          return $_SERVER[$args];
+        }
+        break;
+    }
+    return NULL;
+  }
+
+  /**
+   * User load helper function.
+   * Allows for easier testing.
+   *
+   * @return \Drupal\user\Entity\User
+   *   User object
+   */
+  public function cosignLoadUser($username) {
+    if (is_integer($username)) {
+      return User::load($username);
+    }
+    else {
+      return user_load_by_name($username);
     }
   }
+
 }

@@ -1,22 +1,29 @@
 services:
+  cosign.shared:
+    class: Drupal\cosign\CosignFunctions\CosignSharedFunctions
+    arguments: ['@config.factory', '@current_user', '@request_stack', '@logger.factory']
+
   cosign.authentication.cosign_auth:
     class: Drupal\cosign\Authentication\Provider\Cosign
-    arguments: ['@config.factory', '@user.auth', '@entity.manager']
+    arguments: ['@config.factory', '@user.auth', '@entity.manager', '@cosign.shared']
     tags:
       - { name: authentication_provider, provider_id: 'cosign', priority: 100, global: TRUE }
 
   cosign.subscriber:
     class: Drupal\cosign\EventSubscriber\CosignSubscriber
+    arguments: ['@config.factory', '@redirect.destination', '@cosign.shared']
     tags:
       - { name: event_subscriber }
 
   cosign.page_cache_request_policy.disallow_cosign_requests:
       class: Drupal\cosign\PageCache\DisallowCosignRequests
+      arguments: ['@cosign.shared']
       public: false
       tags:
         - { name: page_cache_request_policy }
 
   cosign.route_subscriber:
     class: Drupal\cosign\Routing\RouteSubscriber
+    arguments: ['@config.factory', '@cosign.shared']
     tags:
       - { name: event_subscriber }

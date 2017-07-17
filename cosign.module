@@ -5,59 +5,53 @@
  * Provides Cosign authentication provider.
  */
 
-/**
- * Implements hook_install().
- */
-function cosign_install() {
-  if (isset($_SERVER['HTTP_HOST'])) {
-    // Set default values for config which require dynamic values.
-    \Drupal::configFactory()->getEditable('cosign.settings')
-      ->set('cosign_logout_to', 'http://' . $_SERVER['HTTP_HOST'])
-      ->save();
-  }
-}
+use Drupal\Core\Form\FormStateInterface;
 
 /**
  * Implements hook_form_alter().
  */
-function cosign_form_alter(&$form, \Drupal\Core\Form\FormStateInterface &$form_state, $form_id) {
+function cosign_form_alter(&$form, FormStateInterface &$form_state, $form_id) {
   if ($form_id == "cosign_admin") {
     $form_state->disableCache();
   }
-/*Haven't tested this. Not sure if its necessary
+  /*Haven't tested this. Not sure if its necessary
   if ($form_id == "user_login_block") {
-    $form['#action'] = 'user/login';
-    $form['name']['#access'] = FALSE;
-    $form['pass']['#access'] = FALSE;
-    $form['submit']['#access'] = FALSE;
-    $form['links']['#value'] = '<a href="https://' . $_SERVER['HTTP_HOST'] . request_uri() . '">Login</a>';
+  $form['#action'] = 'user/login';
+  $form['name']['#access'] = FALSE;
+  $form['pass']['#access'] = FALSE;
+  $form['submit']['#access'] = FALSE;
+  $form['links']['#value'] = '<a href="https://' . $_SERVER['HTTP_HOST'] .
+  request_uri() . '">Login</a>';
   }
-*/
+   */
 
   if ($form_id == "user_form") {
     $user = \Drupal::currentUser();
-    //admin role can now be named anything
+    // Admin role can now be named anything.
     $is_admin = array_intersect(\Drupal::entityQuery('user_role')->condition('is_admin', TRUE)->execute(), $user->getRoles());
-    //if not an admin, hide these fields
+    // If not an admin, hide these fields.
     if (empty($is_admin)) {
       if (isset($form['account']['name'])) {
         $form['account']['name']['#type'] = 'hidden';
       }
       $form['account']['pass']['#access'] = FALSE;
       $form['account']['current_pass']['#access'] = FALSE;
-      //this can't be updated without the prior two by default. this may need to be a setting?
+      // This can't be updated without the prior two by default.
+      // This may need to be a setting?
       $form['account']['mail']['#access'] = FALSE;
     }
   }
 }
 
+use Drupal\Core\Routing\RouteMatchInterface;
+
 /**
  * Implements hook_help().
  */
-function cosign_help($route_name, \Drupal\Core\Routing\RouteMatchInterface $route_match) {
+function cosign_help($route_name, RouteMatchInterface $route_match) {
   $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
   switch ($route_name) {
     case "help.page.cosign":
-      return '<p>' . t("Allows users to authenticate via ".$cosign_brand.".") . '</p>';
+      return '<p>' . t("Allows users to authenticate via @cosign_brand.", ['@cosign_brand' => $cosign_brand]) . '</p>';
   }
 }
