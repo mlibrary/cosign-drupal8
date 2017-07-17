@@ -14,7 +14,7 @@ cosign.logout:
   options:
     no_cache: TRUE
   requirements:
-    _role: authenticated
+    _access: 'TRUE'
 
 cosign.cosignlogout:
   path: /cosign/logout
@@ -24,7 +24,7 @@ cosign.cosignlogout:
   options:
     no_cache: TRUE
   requirements:
-    _role: authenticated
+    _access: 'TRUE'
 
 cosign.login:
   path: /user/login
@@ -34,7 +34,7 @@ cosign.login:
   options:
     no_cache: TRUE
   requirements:
-    _role: anonymous
+    _access: 'TRUE'
 
 cosign.register:
   path: /user/register
@@ -44,4 +44,4 @@ cosign.register:
   options:
     no_cache: TRUE
   requirements:
-    _role: anonymous
+    _access: 'TRUE'

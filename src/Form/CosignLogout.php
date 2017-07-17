@@ -40,16 +40,12 @@ class CosignLogout extends FormBase {
    */
   public function validateForm(array &$form, FormStateInterface $form_state) {
     // none. just a redirect.
-    echo "grr";
-    exit($form_state->getTriggeringElement()['#parents'][0]);
   }
 
   /**
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    echo "ugh";
-    exit($form_state->getTriggeringElement()['#parents'][0]);
     if ($form_state->getTriggeringElement()['#parents'][0] == 'cosign_logout') {
       $form_state->setRedirectUrl(Url::fromRoute('cosign.cosignlogout'));
     }

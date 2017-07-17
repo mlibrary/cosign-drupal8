@@ -95,7 +95,6 @@ class CosignController extends ControllerBase {
    * {@inheritdoc}
    */
   public function cosignLogout(Request $request) {
-    echo "hmm";
     $uname = $this->currentUser->getAccountName();
     if ($this->configFactory->get('cosign.settings')->get('cosign_allow_cosign_anons') == 0 ||
        ($this->cosignShared->cosignIsFriendAccount($uname) &&
@@ -170,7 +169,6 @@ class CosignController extends ControllerBase {
    * {@inheritdoc}
    */
   public function cosignCosignLogout() {
-    echo "huh?";
     $logout = $this->cosignShared->cosignLogoutUrl();
     user_logout();
     $response = new TrustedRedirectResponse($logout);
