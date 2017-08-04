@@ -261,7 +261,7 @@ class CosignSharedFunctions {
   public static function cosignCheckFriendAccount($username, $server_friend) {
     // Make sure we get friend whichever way it is available.
     $is_friend_account = FALSE;
-    if ($server_friend == 'friend' || stristr($username, '@')) {
+    if ((isset($server_friend) && $server_friend == 'friend') || stristr($username, '@')) {
       $is_friend_account = TRUE;
     }
 

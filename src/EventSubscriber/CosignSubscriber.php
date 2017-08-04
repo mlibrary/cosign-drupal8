@@ -70,7 +70,7 @@ class CosignSubscriber implements EventSubscriberInterface {
         // if (!strpos($response->getTargetUrl(), 'user/login') ||
         // !strpos($response->getTargetUrl(), 'user/register')) {.
         $https_url = 'https://' . $_SERVER['HTTP_HOST'] . $request_uri;
-        $response->setTargetUrl($https_url);
+        $response->setTrustedTargetUrl($https_url);
         // }.
       }
       else {
@@ -98,7 +98,7 @@ class CosignSubscriber implements EventSubscriberInterface {
           }
         }
         if ($response instanceof TrustedRedirectResponse) {
-          $response->setTargetUrl($request_uri);
+          $response->setTrustedTargetUrl($request_uri);
         }
         else {
           $event->setResponse(new TrustedRedirectResponse($request_uri));
