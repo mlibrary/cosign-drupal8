@@ -109,7 +109,7 @@ class CosignSharedFunctions {
     }
   }
   
-  public function cosign_logout_url() {
+  public static function cosign_logout_url() {
     $logout_path = \Drupal::config('cosign.settings')->get('cosign_logout_path');
     $logout_to = \Drupal::config('cosign.settings')->get('cosign_logout_to');
     return $logout_path . '?' . $logout_to;
@@ -168,7 +168,7 @@ class CosignSharedFunctions {
   public static function cosign_is_friend_account($username) {
     // Make sure we get friend whichever way it is available.
     $is_friend_account = FALSE;
-    if ($_SERVER['REMOTE_REALM'] == 'friend' || stristr($username, '@')) {
+    if ((isset($_SERVER['REMOTE_REALM']) && $_SERVER['REMOTE_REALM'] == 'friend') || stristr($username, '@')) {
       $is_friend_account = TRUE;
     }
 
