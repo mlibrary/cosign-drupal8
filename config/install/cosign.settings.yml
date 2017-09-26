@@ -2,7 +2,7 @@ cosign_allow_friend_accounts: 0
 cosign_invalid_login: access-denied
 cosign_autocreate: 0
 cosign_autologout: 1
-cosign_allow_anons_on_https: 0
+cosign_allow_anons_on_https: 1
 cosign_allow_cosign_anons: 0
 cosign_logout_path: 'https://weblogin.umich.edu/cgi-bin/logout'
 cosign_login_path: 'https://weblogin.umich.edu/'

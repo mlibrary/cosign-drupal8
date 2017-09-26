@@ -77,7 +77,7 @@ class CosignSubscriber implements EventSubscriberInterface {
         $destination = $this->destinationInterface->getAsArray()['destination'];
         $username = $this->cosignShared->cosignRetrieveRemoteUser();
         global $base_path;
-        if (!$username && $this->configFactory->get('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
+        if (!$username) {
           $request_uri = $this->configFactory->get('cosign.settings')->get('cosign_login_path') . '?cosign-' . $_SERVER['HTTP_HOST'] . '&https://' . $_SERVER['HTTP_HOST'];
           if ($destination == $base_path . 'user/login' || $destination == $base_path . 'user/register') {
             $destination = $base_path;
