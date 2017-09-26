@@ -29,7 +29,7 @@ class CosignSubscriber implements EventSubscriberInterface {
         $destination = \Drupal::destination()->getAsArray()['destination'];
         $username = CosignSharedFunctions::cosign_retrieve_remote_user();
         global $base_path;
-        if (!$username && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
+        if (!$username) {
           $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$_SERVER['HTTP_HOST'];
           if ($destination == $base_path.'user/login' || $destination == $base_path.'user/register') {
             $destination = $base_path;

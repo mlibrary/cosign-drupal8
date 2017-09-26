@@ -86,7 +86,7 @@ class CosignAdmin extends ConfigFormBase {
     $form['cosign_allow_anons_on_https'] = [
       '#type' => 'select',
       '#title' => t('Allow anonymous users to browse over https?'),
-      '#description' => t('If yes, users are not logged in automatically to drupal at an https address even if they are logged into cosign. If no, users are logged in to drupal through cosign after hitting an https address.<br>NOTE: this should probably be set to No at the University of Michigan until cosign does not force user logins for all https addresses. This also means the logout to address should be set to http.<br>ALSO NOTE: if your cosign installation does not force user logins at https and you set this to No, but your site does allow anonymous http browsing, users will be unable to access the content they have access to on http over https.'),
+      '#description' => t('If yes, users are not logged in automatically to drupal at an https address even if they are logged into cosign. If no, users are logged in to drupal through cosign after hitting an https address.<br><del>NOTE: this should probably be set to No at the University of Michigan until cosign does not force user logins for all https addresses. This also means the logout to address should be set to http.</del><br>ALSO NOTE: if your cosign installation does not force user logins at https and you set this to No, but your site does allow anonymous http browsing, users will be unable to access the content they have access to on http over https.'),
       '#options' => $YesNo,
       '#default_value' => \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https'),
     ];
