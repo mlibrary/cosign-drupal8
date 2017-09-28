@@ -122,6 +122,8 @@ class CosignController extends ControllerBase {
    * Send this over to an event handler after forcing https.
    */
   public function cosignLogin(Request $request) {
+    // TODO - not sure how we can unit test this
+    user_cookie_delete('cosign-' . str_replace('.', '_', $_SERVER['HTTP_HOST']));
     $request_uri = $request->getRequestUri();
     global $base_path;
     if (!$this->cosignShared->cosignIsHttps()) {

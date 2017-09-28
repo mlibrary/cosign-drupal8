@@ -22,6 +22,8 @@ class CosignLogout extends FormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    // TODO - not sure how we can unit test this
+    user_cookie_save(['cosign-' . str_replace('.', '_', $_SERVER['HTTP_HOST']) => 'anon']);
     $form['cosign_logout'] = [
       '#type' => 'button',
       '#value' => $this->t('Yes'),

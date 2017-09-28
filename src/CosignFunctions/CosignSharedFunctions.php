@@ -157,7 +157,7 @@ class CosignSharedFunctions {
    */
   public function cosignLogoutUrl() {
     $logout_path = $this->cosignGetSettings('cosign_logout_path');
-    $logout_to = $this->cosignGetSettings('cosign_logout_to');
+    $logout_to = $this->cosignGetSettings('cosign_logout_to').'/';
     return self::cosignGetLogoutUrl($logout_path, $logout_to);
   }
 

@@ -67,6 +67,9 @@ class Cosign implements AuthenticationProviderInterface {
    * {@inheritdoc}
    */
   public function applies(Request $request) {
+    if ($request->cookies->get('Drupal_visitor_cosign-'.str_replace('.', '_', $_SERVER['HTTP_HOST'])) == 'anon') {
+      return FALSE;
+    }
     $username = $this->cosignShared->cosignRetrieveRemoteUser();
     $drupal_user = user_load_by_name($username);
     // This session variable is set and sticks even after user_logout().
@@ -83,10 +86,15 @@ class Cosign implements AuthenticationProviderInterface {
       // Bypass cosign so we dont login again.
       return FALSE;
     }
+    if ($request->cookies->get('cosign-' . str_replace('.', '_', $_SERVER['HTTP_HOST'])) == 'jibberish') {
+      return FALSE;
+    }
     if ($this->cosignShared->cosignIsHttps() &&
         $request->getRequestUri() != '/user/logout' &&
         ($this->configFactory->get('cosign.settings')->get('cosign_allow_cosign_anons') == 0 ||
         $this->configFactory->get('cosign.settings')->get('cosign_allow_anons_on_https') == 0 ||
+        $request->cookies->get('cosign-' . str_replace('.', '_', $_SERVER['HTTP_HOST'])) != 'jibberish' ||
+        strpos($request->headers->get('referer'),$this->configFactory->get('cosign.settings')->get('cosign_login_path')) !== FALSE ||
         strpos($request->getRequestUri(), 'user/login') ||
         strpos($request->getRequestUri(), 'user/register'))
        ) {
