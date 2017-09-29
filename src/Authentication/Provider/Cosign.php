@@ -76,6 +76,7 @@ class Cosign implements AuthenticationProviderInterface {
         $request->getRequestUri() != '/user/logout' &&
         (\Drupal::config('cosign.settings')->get('cosign_allow_cosign_anons') == 0 ||
         \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0 ||
+        strpos($request->headers->get('referer'),$this->configFactory->get('cosign.settings')->get('cosign_login_path')) !== FALSE ||
         strpos($request->getRequestUri(), 'user/login') ||
         strpos($request->getRequestUri(), 'user/register'))
        ) {

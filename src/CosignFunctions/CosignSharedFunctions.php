@@ -111,7 +111,7 @@ class CosignSharedFunctions {
   
   public static function cosign_logout_url() {
     $logout_path = \Drupal::config('cosign.settings')->get('cosign_logout_path');
-    $logout_to = \Drupal::config('cosign.settings')->get('cosign_logout_to');
+    $logout_to = \Drupal::config('cosign.settings')->get('cosign_logout_to').'/';
     return $logout_path . '?' . $logout_to;
   }
 
