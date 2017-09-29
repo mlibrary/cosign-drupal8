@@ -58,6 +58,7 @@ class CosignSubscriber implements EventSubscriberInterface {
    */
   public function checkRedirection(FilterResponseEvent $event) {
     $request_uri = $event->getRequest()->getRequestUri();
+    $referer = $event->getRequest()->server->get('HTTP_REFERER');
     if (strpos($request_uri, 'user/login') || strpos($request_uri, 'user/register')) {
       $response = $event->getResponse();
       if (!$this->cosignShared->cosignIsHttps()
@@ -77,17 +78,18 @@ class CosignSubscriber implements EventSubscriberInterface {
         $destination = $this->destinationInterface->getAsArray()['destination'];
         $username = $this->cosignShared->cosignRetrieveRemoteUser();
         global $base_path;
+        $base_url = rtrim($_SERVER['HTTP_HOST'], '/'). '/';
         if (!$username) {
-          $request_uri = $this->configFactory->get('cosign.settings')->get('cosign_login_path') . '?cosign-' . $_SERVER['HTTP_HOST'] . '&https://' . $_SERVER['HTTP_HOST'];
+          $request_uri = $this->configFactory->get('cosign.settings')->get('cosign_login_path') . '?cosign-' . $_SERVER['HTTP_HOST'] . '&https://' . $base_url;
           if ($destination == $base_path . 'user/login' || $destination == $base_path . 'user/register') {
-            $destination = $base_path;
+            $destination = str_replace('https://'.$base_url,'',$referer);
           }
           $request_uri = $request_uri . $destination;
         }
         else {
           if ($user = $this->cosignShared->cosignUserStatus($username)) {
             if ($request_uri == $base_path . 'user/login' || $request_uri == $base_path . 'user/register') {
-              $request_uri = $base_path;
+              $request_uri = $referer;
             }
             else {
               $request_uri = $destination;
@@ -96,6 +98,9 @@ class CosignSubscriber implements EventSubscriberInterface {
           else {
             throw new AccessDeniedHttpException();
           }
+        }
+        if (empty($request_uri) || strpos($request_uri, 'user/logout')) {
+          $request_uri = '/';
         }
         if ($response instanceof TrustedRedirectResponse) {
           $response->setTrustedTargetUrl($request_uri);
