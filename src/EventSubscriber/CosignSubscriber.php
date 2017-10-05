@@ -11,6 +11,7 @@ use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
 class CosignSubscriber implements EventSubscriberInterface {
   public function checkRedirection(FilterResponseEvent $event) {
     $request_uri = $event->getRequest()->getRequestUri();
+    $referer = $event->getRequest()->server->get('HTTP_REFERER');
     if (strpos($request_uri, 'user/login') || strpos($request_uri, 'user/register')) {
       $response = $event->getResponse();
       if (!CosignSharedFunctions::cosign_is_https() 
@@ -29,21 +30,25 @@ class CosignSubscriber implements EventSubscriberInterface {
         $destination = \Drupal::destination()->getAsArray()['destination'];
         $username = CosignSharedFunctions::cosign_retrieve_remote_user();
         global $base_path;
+        $base_url = rtrim($_SERVER['HTTP_HOST'], '/'). '/';
         if (!$username) {
-          $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$_SERVER['HTTP_HOST'];
+          $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$base_url;
           if ($destination == $base_path.'user/login' || $destination == $base_path.'user/register') {
-            $destination = $base_path;
+            $destination = str_replace('https://'.$base_url,'',$referer);
           }
           $request_uri = $request_uri . $destination;
         }
         else {
           CosignSharedFunctions::cosign_user_status($username);
           if ($request_uri == $base_path.'user/login' || $request_uri == $base_path.'user/register') {
-            $request_uri = $base_path;
+            $request_uri = $referer;
           }
           else {
             $request_uri = $destination;
           }
+        }
+        if (empty($request_uri) || strpos($request_uri, 'user/logout')) {
+          $request_uri = '/';
         }
         if ($response instanceOf TrustedRedirectResponse) {
            $response->setTrustedTargetUrl($request_uri);
