@@ -21,7 +21,7 @@ class CosignSharedFunctions {
     $user = \Drupal::currentUser();
     $uname = $user->getAccountName();
     $drupal_user = user_load_by_name($cosign_username);
-    if ($drupal_user->isBlocked()) {
+    if ($drupal_user && $drupal_user->isBlocked()) {
       return null;
     }
     if (!empty($uname)) {
