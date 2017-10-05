@@ -21,6 +21,9 @@ class CosignSharedFunctions {
     $user = \Drupal::currentUser();
     $uname = $user->getAccountName();
     $drupal_user = user_load_by_name($cosign_username);
+    if ($drupal_user->isBlocked()) {
+      return null;
+    }
     if (!empty($uname)) {
       //youre already logged in
       //make sure you are the cosign user. if not log out. This is unlikely
