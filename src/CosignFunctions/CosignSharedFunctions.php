@@ -22,7 +22,12 @@ class CosignSharedFunctions {
     $uname = $user->getAccountName();
     $drupal_user = user_load_by_name($cosign_username);
     if ($drupal_user && $drupal_user->isBlocked()) {
-      return null;
+      if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
+        return user_load(0);
+      }
+      else {
+        return null;
+      }
     }
     if (!empty($uname)) {
       //youre already logged in
