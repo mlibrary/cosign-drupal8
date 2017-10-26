@@ -67,12 +67,12 @@ class CosignSubscriber implements EventSubscriberInterface {
         if ($response instanceOf TrustedRedirectResponse) {
           drupal_set_message('request_uri4 - '.$request_uri);
           // we go into endless loop land here
-          //$response->setTrustedTargetUrl($request_uri);
+          $response->setTrustedTargetUrl($request_uri);
         }
         else {
           drupal_set_message('request_uri5 - '.$request_uri);
           // we go into endless loop land here
-          //$event->setResponse(new TrustedRedirectResponse($request_uri));
+          $event->setResponse(new TrustedRedirectResponse($request_uri));
         }
       }
     }
