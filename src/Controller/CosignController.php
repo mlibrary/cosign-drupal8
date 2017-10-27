@@ -70,14 +70,12 @@ class CosignController extends ControllerBase {
       }
       else {
         $referrer = $base_path;
-        $dest = ltrim($request->query->get('destination'),'/');
+        $dest = $request->query->get('destination');
         if (!empty($dest)) {
-          $referrer .= $dest;
-        }
-        elseif (!empty($_SERVER['HTTP_REFERER'])) {
-          $referrer = $_SERVER['HTTP_REFERER'];
+          $referrer = ltrim($dest,'/');
         }
       }
+
       return new TrustedRedirectResponse($referrer);
     }
   }

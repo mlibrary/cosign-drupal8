@@ -99,7 +99,7 @@ class Cosign implements AuthenticationProviderInterface {
       if (!CosignSharedFunctions::cosign_is_friend_account($username)){
         $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
         $dest = $request->getRequestUri();
-        $login_path = '/user/login?destination='.$dest;
+        $login_path = '/user/login?destination='.ltrim($dest,'/');
         drupal_set_message(t('This site is restricted. You may try <a href="'.$login_path.'">logging in to '.$cosign_brand.'</a>.'), 'error');
       }
       throw new AccessDeniedHttpException();
