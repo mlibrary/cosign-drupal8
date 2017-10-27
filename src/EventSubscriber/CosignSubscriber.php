@@ -44,13 +44,9 @@ class CosignSubscriber implements EventSubscriberInterface {
         else {
           CosignSharedFunctions::cosign_user_status($username);
           if (strpos($request_uri, $base_path.'user/login') !== FALSE || strpos($request_uri, $base_path.'user/register') !== FALSE) {
-            $uri_array = parse_url($request_uri);
-            if (!empty($uri_array['query'])) {
-              $temp = explode('=', $uri_array['query']);
-              $query = [$temp[0] => $temp[1]];
-              if (isset($query['destination'])) {
-                $referer .= $query['destination'];
-              }
+            $dest = $event->getRequest()->query->get('destination');
+            if (!empty($dest)) {
+              $referer .= $dest;
             }
             $request_uri = $referer;
           }

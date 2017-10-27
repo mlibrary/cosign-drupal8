@@ -73,9 +73,9 @@ class CosignController extends ControllerBase {
       }
       else {
         $referrer = $base_path;
-        $uri_array = parse_url($request_uri);
-        if (!empty($uri_array['query'])) {
-          $referrer .= $uri_array['query'];
+        $dest = $request->query->get('destination');
+        if (!empty($dest)) {
+          $referrer .= $dest;
         }
       }
       return new TrustedRedirectResponse($referrer);
