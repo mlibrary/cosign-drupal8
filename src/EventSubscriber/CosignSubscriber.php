@@ -51,7 +51,11 @@ class CosignSubscriber implements EventSubscriberInterface {
             drupal_set_message('referer2 - '.$referer);
             $uri_array = parse_url($request_uri);
             if (!empty($uri_array['query'])) {
-              $referer .= $uri_array['query'];
+              $temp = explode('=', $uri_array['query']);
+              $query = [$temp[0] => $temp[1]];
+              if (isset($query['destination'])) {
+                $referer .= $query['destination'];
+              }
             }
             $request_uri = $referer;
             drupal_set_message('request_uri2 - '.$request_uri);
