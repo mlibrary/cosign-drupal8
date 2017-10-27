@@ -46,7 +46,7 @@ class CosignSubscriber implements EventSubscriberInterface {
           if (strpos($request_uri, $base_path.'user/login') !== FALSE || strpos($request_uri, $base_path.'user/register') !== FALSE) {
             $dest = $event->getRequest()->query->get('destination');
             if (!empty($dest)) {
-              $referer = '/'.$dest;
+              $referer = $dest;
             }
             $request_uri = $referer;
           }

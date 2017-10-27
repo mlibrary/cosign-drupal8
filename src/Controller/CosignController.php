@@ -72,7 +72,7 @@ class CosignController extends ControllerBase {
         $referrer = $base_path;
         $dest = $request->query->get('destination');
         if (!empty($dest)) {
-          $referrer = ltrim($dest,'/');
+          $referrer .= ltrim($dest,'/');
         }
       }
 
