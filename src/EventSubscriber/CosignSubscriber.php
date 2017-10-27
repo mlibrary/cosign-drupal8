@@ -11,7 +11,7 @@ use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
 class CosignSubscriber implements EventSubscriberInterface {
   public function checkRedirection(FilterResponseEvent $event) {
     $request_uri = $event->getRequest()->getRequestUri();
-    //$referer = $event->getRequest()->server->get('HTTP_REFERER');
+    $referer = $event->getRequest()->server->get('HTTP_REFERER');
     if (strpos($request_uri, 'user/login') || strpos($request_uri, 'user/register')) {
       $response = $event->getResponse();
       if (!CosignSharedFunctions::cosign_is_https() 
@@ -30,9 +30,9 @@ class CosignSubscriber implements EventSubscriberInterface {
         $destination = \Drupal::destination()->getAsArray()['destination'];
         $username = CosignSharedFunctions::cosign_retrieve_remote_user();
         global $base_path;
-        //if (empty($referer)) {
+        if (empty($referer)) {
           $referer = $base_path;
-        //}
+        }
         $base_url = rtrim($_SERVER['HTTP_HOST'], '/'). '/';
         if (!$username) {
           $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$base_url;
