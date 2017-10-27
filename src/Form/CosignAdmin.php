@@ -94,7 +94,7 @@ class CosignAdmin extends ConfigFormBase {
     $form['cosign_allow_cosign_anons'] = [
       '#type' => 'select',
       '#title' => t('Allow logged in cosign users to browse anonymously?'),
-      '#description' => t('If Yes, logged in cosign users can browse the site anonymously by logging out of drupal. If No, logged in cosign users will be logged in automatically to drupal.'),
+      '#description' => t('If Yes, logged in cosign users can browse the site anonymously by logging out of drupal. If No, logged in cosign users will attempt to be logged in automatically to drupal.'),
       '#options' => $YesNo,
       '#default_value' => \Drupal::config('cosign.settings')->get('cosign_allow_cosign_anons'),
     ];

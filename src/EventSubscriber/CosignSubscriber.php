@@ -11,12 +11,9 @@ use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
 class CosignSubscriber implements EventSubscriberInterface {
   public function checkRedirection(FilterResponseEvent $event) {
     $request_uri = $event->getRequest()->getRequestUri();
-    drupal_set_message('request_uri1 - '.$request_uri);
     $referer = $event->getRequest()->server->get('HTTP_REFERER');
-    drupal_set_message('referer1 - '.$referer);
     if (strpos($request_uri, 'user/login') || strpos($request_uri, 'user/register')) {
       $response = $event->getResponse();
-      drupal_set_message('response1 - '.$response);
       if (!CosignSharedFunctions::cosign_is_https() 
         //&& strpos($response->getTargetUrl(), 'ttps://')
       ) {
@@ -31,7 +28,6 @@ class CosignSubscriber implements EventSubscriberInterface {
       }
       else {
         $destination = \Drupal::destination()->getAsArray()['destination'];
-        drupal_set_message('destination1 - '.$destination);
         $username = CosignSharedFunctions::cosign_retrieve_remote_user();
         global $base_path;
         if (empty($referer)) {
@@ -48,7 +44,6 @@ class CosignSubscriber implements EventSubscriberInterface {
         else {
           CosignSharedFunctions::cosign_user_status($username);
           if (strpos($request_uri, $base_path.'user/login') !== FALSE || strpos($request_uri, $base_path.'user/register') !== FALSE) {
-            drupal_set_message('referer2 - '.$referer);
             $uri_array = parse_url($request_uri);
             if (!empty($uri_array['query'])) {
               $temp = explode('=', $uri_array['query']);
@@ -58,24 +53,18 @@ class CosignSubscriber implements EventSubscriberInterface {
               }
             }
             $request_uri = $referer;
-            drupal_set_message('request_uri2 - '.$request_uri);
           }
           else {
             $request_uri = $destination;
-            drupal_set_message('request_uri3 - '.$request_uri);
           }
         }
         if (empty($request_uri) || strpos($request_uri, 'user/logout')) {
           $request_uri = '/';
         }
         if ($response instanceOf TrustedRedirectResponse) {
-          drupal_set_message('request_uri4 - '.$request_uri);
-          // we go into endless loop land here
           $response->setTrustedTargetUrl($request_uri);
         }
         else {
-          drupal_set_message('request_uri5 - '.$request_uri);
-          // we go into endless loop land here
           $event->setResponse(new TrustedRedirectResponse($request_uri));
         }
       }

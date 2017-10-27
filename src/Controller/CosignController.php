@@ -77,7 +77,6 @@ class CosignController extends ControllerBase {
         if (!empty($uri_array['query'])) {
           $referrer .= $uri_array['query'];
         }
-        drupal_set_message('controller-referer '.$referrer);
       }
       return new TrustedRedirectResponse($referrer);
     }
