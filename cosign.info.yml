@@ -5,6 +5,7 @@ description: 'Provides the Cosign authentication provider'
 # core: 8.x
 
 
-version: '8.0.0-alpha'
+version: '9.0.0-inf1'
 core: '8.x'
+core_version_requirement: ^8 || ^9 || ^10
 project: 'drupal'
