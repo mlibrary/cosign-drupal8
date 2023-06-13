@@ -9,7 +9,7 @@ namespace Drupal\cosign\Authentication\Provider;
 
 use Drupal\Core\Authentication\AuthenticationProviderInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
-use Drupal\Core\Entity\EntityManagerInterface;
+use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\user\UserAuthInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\cosign\CosignFunctions\CosignSharedFunctions;
@@ -39,7 +39,7 @@ class Cosign implements AuthenticationProviderInterface {
   /**
    * The entity manager.
    *
-   * @var \Drupal\Core\Entity\EntityManagerInterface
+   * @var \Drupal\Core\Entity\EntityTypeManager
    */
   protected $entityManager;
 
@@ -50,10 +50,10 @@ class Cosign implements AuthenticationProviderInterface {
    *   The config factory.
    * @param \Drupal\user\UserAuthInterface $user_auth
    *   The user authentication service.
-   * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
+   * @param \Drupal\Core\Entity\EntityTypeManager $entity_manager
    *   The entity manager service.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, UserAuthInterface $user_auth, EntityManagerInterface $entity_manager) {
+  public function __construct(ConfigFactoryInterface $config_factory, UserAuthInterface $user_auth, EntityTypeManager $entity_manager) {
     $this->configFactory = $config_factory;
     $this->userAuth = $user_auth;
     $this->entityManager = $entity_manager;

@@ -1,7 +1,7 @@
 services:
   cosign.authentication.cosign_auth:
     class: Drupal\cosign\Authentication\Provider\Cosign
-    arguments: ['@config.factory', '@user.auth', '@entity.manager']
+    arguments: ['@config.factory', '@user.auth', '@entity_type.manager']
     tags:
       - { name: authentication_provider, provider_id: 'cosign', priority: 100, global: TRUE }
 
