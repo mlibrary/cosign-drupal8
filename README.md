@@ -11,4 +11,6 @@ a module to utilize cosign for drupal logins, updated for drupal 9.x
    * instructions and metadata for composer installation
    * run through https://www.drupal.org/project/drupalmoduleupgrader to check for other deprecation.
    * make the tests work; expand them
+   * remove silly debug logs
+   * fix HTTP/HTTPS detection - without this 'force https' mode won't work (workaround, and recommendation, is to server your site over only HTTPS with an HTTP -> HTTPS redirect)
 
