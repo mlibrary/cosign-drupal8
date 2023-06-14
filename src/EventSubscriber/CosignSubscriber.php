@@ -14,7 +14,12 @@ class CosignSubscriber implements EventSubscriberInterface {
     $referer = $event->getRequest()->server->get('HTTP_REFERER');
     if (strpos($request_uri, 'user/login') || strpos($request_uri, 'user/register')) {
       $response = $event->getResponse();
-      if (!CosignSharedFunctions::cosign_is_https() 
+
+      // GD -- causes redirect loop -- must investigate as this is untrue!
+      // if (!CosignSharedFunctions::cosign_is_https()
+      if (false
+      //
+
         //&& strpos($response->getTargetUrl(), 'ttps://')
       ) {
         //settargeturl will not work if not an event from a redirect
@@ -23,6 +28,7 @@ class CosignSubscriber implements EventSubscriberInterface {
         //there may be a better way to handle this
 //        if (!strpos($response->getTargetUrl(), 'user/login') || !strpos($response->getTargetUrl(), 'user/register')) {
           $https_url = 'https://' . $_SERVER['HTTP_HOST'] . $request_uri;
+          #error_log("intercepting {$event->getRequest()}..."); #$request_uri)
           $response->setTrustedTargetUrl($https_url);
 //        }
       }
@@ -33,12 +39,15 @@ class CosignSubscriber implements EventSubscriberInterface {
         $base_url = rtrim($_SERVER['HTTP_HOST'], '/'). '/';
         if (!$username) {
           $request_uri = \Drupal::config('cosign.settings')->get('cosign_login_path').'?cosign-'.$_SERVER['HTTP_HOST'].'&https://'.$base_url;
+          error_log("*** NO USERNAME, REDIRECTING TO $request_uri ***");
           if ($destination == $base_path.'user/login' || $destination == $base_path.'user/register') {
             $destination = str_replace('https://'.$base_url,'',$referer);
           }
           $request_uri = $request_uri . $destination;
+          error_log("*** CHANGED TO $request_uri ***");
         }
         else {
+          error_log("*** GOT USER {$username} ***");
           CosignSharedFunctions::cosign_user_status($username);
           if ($request_uri == $base_path.'user/login' || $request_uri == $base_path.'user/register') {
             $request_uri = $referer;
