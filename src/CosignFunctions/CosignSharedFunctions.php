@@ -23,7 +23,7 @@ class CosignSharedFunctions {
     $drupal_user = user_load_by_name($cosign_username);
     if ($drupal_user && $drupal_user->isBlocked()) {
       if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-        return user_load(0);
+        return user_load_by_name(0);
       }
       else {
         return null;
@@ -43,7 +43,7 @@ class CosignSharedFunctions {
       if (\Drupal::config('cosign.settings')->get('cosign_allow_friend_accounts') == 0 && $is_friend_account) {
         CosignSharedFunctions::cosign_friend_not_allowed();
         if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-          return user_load(0);
+          return user_load_by_name(0);
         }
         else {
           return null;
@@ -58,11 +58,11 @@ class CosignSharedFunctions {
       //cosign user doesn't have a drupal account
       if (\Drupal::config('cosign.settings')->get('cosign_autocreate') == 1) {
         $new_user = CosignSharedFunctions::cosign_create_new_user($cosign_username);
-        user_load($new_user->id(), TRUE);
+        user_load_by_name($new_user->id(), TRUE);
       }
       else {
-        //drupal_set_message(t('This site does not auto create users from cosign. Please contact the <a href="mailto:'. \Drupal::config("system.site")->get("mail").'">site administrator</a> to have an account created.'), 'warning');
-        user_load(0);
+          //Drupal::messenger()->addWarning(t('This site does not auto create users from cosign. Please contact the <a href="mailto:'. \Drupal::config("system.site")->get("mail").'">site administrator</a> to have an account created.'));
+        user_load_by_name(0);
       }
     }
     elseif (empty($cosign_username) && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 0){
@@ -72,10 +72,10 @@ class CosignSharedFunctions {
     }
     $user = \Drupal::currentUser();
     if (!$user){
-      $user = user_load(0);
+      $user = user_load_by_name(0);
     }
     if ($user->id() == 0 && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1){
-      //drupal_set_message(t('You do not have a valid cosign username. Browsing as anonymous user over https.'));
+      //Drupal::messenger()->addError(t('You do not have a valid cosign username. Browsing as anonymous user over https.'));
     }
     return $user;
   }
@@ -87,15 +87,21 @@ class CosignSharedFunctions {
    *   User Object
    */
   public static function cosign_login_user($drupal_user) {
+    error_log("$$$$$$$$$ 1/4 actually trying to log in here...");
     user_login_finalize($drupal_user);
+    error_log("$$$$$$$$$ 2/4 actually trying to log in here...");
     $the_user = \Drupal::currentUser();
+    error_log("$$$$$$$$$ 3/4 actually trying to log in here...");
     $username = CosignSharedFunctions::cosign_retrieve_remote_user();
+    error_log("$$$$$$$$$ 4/4 actually trying to log in {$username} (c) here...");
+
     if ($the_user->getAccountName() != $username) {
       \Drupal::logger('cosign')->notice('User attempted login and the cosign username: @remote_user, did not match the drupal username: @drupal_user', array('@remote_user' => $username, '@drupal_user' => $the_user->getAccountName()));
       user_logout();
     }
 
-    return user_load($the_user->id(), TRUE);
+    error_log("L110 user_load_by_name(the_user->id)");
+    return user_load_by_name($the_user->id(), TRUE);
   }
 
   /**
@@ -106,10 +112,10 @@ class CosignSharedFunctions {
    */
   public static function cosign_friend_not_allowed() {
     \Drupal::logger('cosign')->notice('User attempted login using a university friend account and the friend account configuration setting is turned off: @remote_user', array('@remote_user' => $username));
-    drupal_set_message(t(\Drupal::config('cosign.settings')->get('cosign_friend_account_message')), 'warning');
+    Drupal::messenger()->addWarning(t(\Drupal::config('cosign.settings')->get('cosign_friend_account_message')));
     if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
       $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
-      drupal_set_message(t('You might want to <a href="/user/logout">logout of '.$cosign_brand.'</a> to browse anonymously or as another '.$cosign_brand.' user.'), 'warning');
+      Drupal::messenger()->addWarning(t('You might want to <a href="/user/logout">logout of '.$cosign_brand.'</a> to browse anonymously or as another '.$cosign_brand.' user.'));
     }
     else {
       user_logout();

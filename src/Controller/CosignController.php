@@ -32,7 +32,7 @@ class CosignController extends ControllerBase {
       $response['form'] = \Drupal::formBuilder()->getForm($form_class);
     }
     if (!empty($uname)){
-      drupal_set_message('User '.$uname.' successfully logged out of '.\Drupal::config("system.site")->get("name"), 'status', FALSE);
+        \Drupal::messenger()->addStatus('User '.$uname.' successfully logged out of '.\Drupal::config("system.site")->get("name"));
     }
     user_logout();
     return $response;
@@ -63,7 +63,7 @@ class CosignController extends ControllerBase {
           //admin role can now be named anything
           $is_admin = array_intersect(\Drupal::entityQuery('user_role')->condition('is_admin', TRUE)->execute(), $user->getRoles());
           if (!empty($is_admin) && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
-            drupal_set_message('When the homepage is set to /user (Drupal default), anonymous browsing will not always work', 'warning');
+              Drupal::messenger()->addWarning('When the homepage is set to /user (Drupal default), anonymous browsing will not always work');
           }
           $referrer = $base_path.'user';
         }
