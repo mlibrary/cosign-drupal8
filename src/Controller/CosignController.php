@@ -63,7 +63,7 @@ class CosignController extends ControllerBase {
           //admin role can now be named anything
           $is_admin = array_intersect(\Drupal::entityQuery('user_role')->condition('is_admin', TRUE)->execute(), $user->getRoles());
           if (!empty($is_admin) && \Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
-              Drupal::messenger()->addWarning('When the homepage is set to /user (Drupal default), anonymous browsing will not always work');
+              \Drupal::messenger()->addWarning('When the homepage is set to /user (Drupal default), anonymous browsing will not always work');
           }
           $referrer = $base_path.'user';
         }

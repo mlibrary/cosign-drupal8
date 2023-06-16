@@ -18,8 +18,6 @@ class CosignSubscriber implements EventSubscriberInterface {
       // GD -- causes redirect loop -- must investigate as this is untrue!
       // if (!CosignSharedFunctions::cosign_is_https()
       if (false
-      //
-
         //&& strpos($response->getTargetUrl(), 'ttps://')
       ) {
         //settargeturl will not work if not an event from a redirect

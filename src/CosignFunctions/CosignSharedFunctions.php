@@ -112,10 +112,10 @@ class CosignSharedFunctions {
    */
   public static function cosign_friend_not_allowed() {
     \Drupal::logger('cosign')->notice('User attempted login using a university friend account and the friend account configuration setting is turned off: @remote_user', array('@remote_user' => $username));
-    Drupal::messenger()->addWarning(t(\Drupal::config('cosign.settings')->get('cosign_friend_account_message')));
+    \Drupal::messenger()->addWarning(t(\Drupal::config('cosign.settings')->get('cosign_friend_account_message')));
     if (\Drupal::config('cosign.settings')->get('cosign_allow_anons_on_https') == 1) {
       $cosign_brand = \Drupal::config('cosign.settings')->get('cosign_branded');
-      Drupal::messenger()->addWarning(t('You might want to <a href="/user/logout">logout of '.$cosign_brand.'</a> to browse anonymously or as another '.$cosign_brand.' user.'));
+      \Drupal::messenger()->addWarning(t('You might want to <a href="/user/logout">logout of '.$cosign_brand.'</a> to browse anonymously or as another '.$cosign_brand.' user.'));
     }
     else {
       user_logout();
